@@ -84,14 +84,12 @@ if (cluster.isMaster) {
 
     const context = { preloadedChunks: [] }
     const matches = matchRoutes(routes, location)
-    console.log('context', location, context)
 
     if (!matches.length) {
       res.redirect(301, '/')
     } else {
       const MatchedPage = matches.slice(-1)[0].route.component
       context.preloadedChunks.push(MatchedPage.chunkName || 'Landing')
-      console.log('match', MatchedPage.chunkName)
 
       const html = ReactDOMServer.renderToString(
         <Provider store={store}>

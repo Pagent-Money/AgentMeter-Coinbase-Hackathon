@@ -6,7 +6,7 @@
   "author": "terencege <terencegehui@yahoo.com>",
   "license": "MIT",
   "scripts": {
-    "build:web": "rimraf static/* && npm run build:server && npm run build:client",
+    "build": "rimraf static/* && npm run build:server && npm run build:client",
     "build:client": "cross-env NODE_ENV=production APP_ENV=production TARGET=browser webpack",
     "build:server": "cross-env NODE_ENV=production APP_ENV=production TARGET=server webpack",
     "build:service": "cross-env NODE_ENV=production APP_ENV=production TARGET=service webpack",
