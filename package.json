@@ -63,7 +63,10 @@
     "scheduler": "^0.23.0",
     "url-parse": "^1.5.10",
     "uuid": "^9.0.1",
-    "w3c-keyname": "^2.2.6"
+    "viem": "^2.31.3",
+    "w3c-keyname": "^2.2.6",
+    "x402-express": "^0.4.0",
+    "x402-fetch": "^0.4.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.15.7",
