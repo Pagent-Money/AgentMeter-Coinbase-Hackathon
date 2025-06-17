@@ -181,6 +181,8 @@ const browserConfig = {
     fallback: {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
+      path: require.resolve('path-browserify'),
+      os: require.resolve('os-browserify/browser'),
       vm: require.resolve('vm-browserify'),
       zlib: require.resolve('browserify-zlib'),
       http: require.resolve('stream-http'),

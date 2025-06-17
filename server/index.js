@@ -17,6 +17,7 @@ import Provider from 'components/Provider'
 import configure from 'store'
 import Routes, { routes } from 'routes'
 import sagas from 'sagas'
+import { paymentMiddleware } from 'x402-express'
 
 const numCPUs = os.cpus().length
 
@@ -45,8 +46,6 @@ if (cluster.isMaster) {
     <meta name="keywords" content="agent,nft,programming system,visual programming,smart contract,blockchain,cryptocurrencies,bitcoin,ethereum" data-react-helmet="true">
     <title>${title}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0">
-    <link rel="icon" type="image/png" href="/images/favicon.png?v=3">
-    <link rel="shortcut icon" type="image/png" href="/images/favicon.png?v=3">
     <link rel="stylesheet" href="/styles/bundle.css?v=${__webpack_hash__}">
     ${chunks.map(chunk => `<link rel="stylesheet" href="/styles/${chunk}.chunk.css?v=${__webpack_hash__}">`)}
   </head>
@@ -74,39 +73,39 @@ if (cluster.isMaster) {
   })
 
   app.get('*', async (req, res) => {
-    // try {
-    const location = req.url
-    const history = createMemoryHistory({ initialEntries: [req.url] })
-    const store = configure({ intl: getInitialLang() }, history)
-    const rootTask = store.runSaga(sagas)
-    store.close()
-    await rootTask.done
+    try {
+      const location = req.url
+      const history = createMemoryHistory({ initialEntries: [req.url] })
+      const store = configure({ intl: getInitialLang() }, history)
+      const rootTask = store.runSaga(sagas)
+      store.close()
+      await rootTask.done
 
-    const context = { preloadedChunks: [] }
-    const matches = matchRoutes(routes, location)
+      const context = { preloadedChunks: [] }
+      const matches = matchRoutes(routes, location)
 
-    if (!matches.length) {
-      res.redirect(301, '/')
-    } else {
-      const MatchedPage = matches.slice(-1)[0].route.component
-      context.preloadedChunks.push(MatchedPage.chunkName || 'Landing')
+      if (!matches.length) {
+        res.redirect(301, '/')
+      } else {
+        const MatchedPage = matches.slice(-1)[0].route.component
+        context.preloadedChunks.push(MatchedPage.chunkName || 'Landing')
 
-      const html = ReactDOMServer.renderToString(
-        <Provider store={store}>
-          <StaticRouter history={history} location={location}>
-            <Routes />
-          </StaticRouter>
-        </Provider>
-      )
+        const html = ReactDOMServer.renderToString(
+          <Provider store={store}>
+            <StaticRouter history={history} location={location}>
+              <Routes />
+            </StaticRouter>
+          </Provider>
+        )
 
-      const title = flushTitle()
-      const preloadedState = store.getState()
-      const preloadedChunks = context.preloadedChunks
-      res.status(200).send(renderFullPage(html, title, preloadedState, preloadedChunks))
+        const title = flushTitle()
+        const preloadedState = store.getState()
+        const preloadedChunks = context.preloadedChunks
+        res.status(200).send(renderFullPage(html, title, preloadedState, preloadedChunks))
+      }
+    } catch (error) {
+      res.status(500).send(`Internal Server Error: ${error.message}`)
     }
-    // } catch (error) {
-    // res.status(500).send(`Internal Server Error: ${error.message}`)
-    // }
   })
 
   app.listen(port, () => console.log(`Listening on port ${port}`))
