@@ -47,21 +47,49 @@ const Chat = ({ actions }) => {
         return
       }
 
-      // Create wallet client
-      const client = createWalletClient({
-        chain: baseSepolia,
-        transport: custom(window.ethereum)
-      })
-
-      // Request account access
-      const [address] = await client.requestAddresses()
+      // Request account access first
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      const address = accounts[0]
 
       if (address) {
+        // Create a custom account object that x402-fetch expects
+        const account = {
+          address: address,
+          type: 'json-rpc',
+          // Add required signing methods that x402-fetch needs
+          signMessage: async (message) => {
+            return await window.ethereum.request({
+              method: 'personal_sign',
+              params: [message, address]
+            })
+          },
+          signTypedData: async (typedData) => {
+            return await window.ethereum.request({
+              method: 'eth_signTypedData_v4',
+              params: [address, JSON.stringify(typedData)]
+            })
+          },
+          signTransaction: async (transaction) => {
+            return await window.ethereum.request({
+              method: 'eth_signTransaction',
+              params: [transaction]
+            })
+          }
+        }
+
+        // Create wallet client with the custom account
+        const client = createWalletClient({
+          chain: baseSepolia,
+          transport: custom(window.ethereum),
+          account: account
+        })
+
         setWalletAddress(address)
         setWalletClient(client)
         setIsWalletConnected(true)
         console.log('Wallet connected:', address)
         console.log('Wallet client:', client)
+        console.log('Wallet client account:', client.account)
 
         // Get wallet balance
         const balance = await getWalletBalance(address)
@@ -77,7 +105,7 @@ const Chat = ({ actions }) => {
 
         // Test payment flow
         const fetchWithPayment = wrapFetchWithPayment(fetch, client)
-        console.log('Testing payment flow with simplified wallet client...')
+        console.log('Testing payment flow with custom account object...')
         try {
           const response = await fetchWithPayment(`${API_URL}/chat`, {
             method: "GET",
@@ -165,11 +193,13 @@ const Chat = ({ actions }) => {
 
       // Test getting the current account
       let address
-      if (walletClient.requestAddresses) {
+      if (walletClient.account && walletClient.account.address) {
+        address = walletClient.account.address
+        console.log('✅ Found address in wallet client account:', address)
+      } else if (walletClient.requestAddresses) {
         const [addr] = await walletClient.requestAddresses()
         address = addr
-      } else if (walletClient.account && walletClient.account.address) {
-        address = walletClient.account.address
+        console.log('✅ Got address via requestAddresses:', address)
       } else {
         throw new Error('Cannot get wallet address')
       }
@@ -196,26 +226,18 @@ const Chat = ({ actions }) => {
       console.log('Balance:', balance)
 
       // Test if account is properly set up for x402
-      if (walletClient.account) {
-        if (typeof walletClient.account === 'string') {
-          console.log('✅ Account properly configured for x402 (string)')
-          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Account ready for x402 payments`)
-        } else if (walletClient.account.address) {
-          console.log('✅ Account properly configured for x402 (object)')
-          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Account ready for x402 payments`)
-        } else {
-          console.log('❌ Account not properly configured for x402')
-          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Account not ready for x402 payments`)
-        }
+      if (walletClient.account && walletClient.account.address) {
+        console.log('✅ Account properly configured for x402')
+        console.log('Account address:', walletClient.account.address)
+        console.log('Account type:', walletClient.account.type)
+        console.log('Account has signMessage:', typeof walletClient.account.signMessage === 'function')
+        console.log('Account has signTypedData:', typeof walletClient.account.signTypedData === 'function')
+        console.log('Account has signTransaction:', typeof walletClient.account.signTransaction === 'function')
+
+        alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Account ready for x402 payments`)
       } else {
-        // Check if wallet client has the required properties for x402
-        if (walletClient.chain && walletClient.transport) {
-          console.log('✅ Wallet client has chain and transport properties')
-          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Wallet client ready for x402 payments`)
-        } else {
-          console.log('❌ Wallet client missing required properties')
-          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Wallet client not ready for x402 payments`)
-        }
+        console.log('❌ Account not properly configured for x402')
+        alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Account not ready for x402 payments`)
       }
     } catch (error) {
       console.error('Wallet test failed:', error)
@@ -232,39 +254,49 @@ const Chat = ({ actions }) => {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' })
           if (accounts.length > 0) {
-            // Create wallet client
+            const address = accounts[0]
+
+            // Create a custom account object that x402-fetch expects
+            const account = {
+              address: address,
+              type: 'json-rpc',
+              // Add required signing methods that x402-fetch needs
+              signMessage: async (message) => {
+                return await window.ethereum.request({
+                  method: 'personal_sign',
+                  params: [message, address]
+                })
+              },
+              signTypedData: async (typedData) => {
+                return await window.ethereum.request({
+                  method: 'eth_signTypedData_v4',
+                  params: [address, JSON.stringify(typedData)]
+                })
+              },
+              signTransaction: async (transaction) => {
+                return await window.ethereum.request({
+                  method: 'eth_signTransaction',
+                  params: [transaction]
+                })
+              }
+            }
+
+            // Create wallet client with the custom account
             const client = createWalletClient({
               chain: baseSepolia,
-              transport: custom(window.ethereum)
+              transport: custom(window.ethereum),
+              account: account
             })
 
-            setWalletAddress(accounts[0])
+            setWalletAddress(address)
             setWalletClient(client)
             setIsWalletConnected(true)
-            console.log('Auto-connected to wallet:', accounts[0])
+            console.log('Auto-connected to wallet:', address)
             console.log('Wallet client:', client)
+            console.log('Wallet client account:', client.account)
 
             // Get wallet balance
-            getWalletBalance(accounts[0])
-
-            // Test payment flow
-            const fetchWithPayment = wrapFetchWithPayment(fetch, client)
-            console.log('Testing payment flow with simplified wallet client...')
-            try {
-              const response = await fetchWithPayment(`${API_URL}/chat`, {
-                method: "GET",
-              })
-              console.log('Payment test response status:', response.status)
-              if (response.status === 402) {
-                const paymentData = await response.json()
-                console.log('Payment test - payment required:', paymentData)
-              } else {
-                const body = await response.json()
-                console.log('Payment test - success:', body)
-              }
-            } catch (error) {
-              console.log('Payment test - error:', error.message)
-            }
+            getWalletBalance(address)
           }
         } catch (error) {
           console.error('Error auto-connecting wallet:', error)
@@ -463,8 +495,8 @@ const Chat = ({ actions }) => {
                       alert('❌ Wallet client not available. Please connect your wallet.')
                       return
                     }
-                    
-                    if (!walletClient.chain || !walletClient.transport) {
+
+                    if (!walletClient.account || !walletClient.account.address) {
                       alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
                       return
                     }
