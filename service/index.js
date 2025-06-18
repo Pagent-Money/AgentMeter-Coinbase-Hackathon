@@ -16,7 +16,7 @@ app.use(
   paymentMiddleware(
     payTo,
     {
-      'GET /weather': {
+      'GET /chat': {
         price: '$0.001',
         network: 'base-sepolia'
       },
@@ -41,10 +41,10 @@ app.use(
   )
 )
 
-app.get('/weather', (req, res) => {
+app.get('/chat', (req, res) => {
   res.send({
     report: {
-      weather: 'sunny',
+      chat: 'sunny',
       temperature: 70
     }
   })

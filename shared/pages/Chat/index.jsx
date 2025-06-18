@@ -57,10 +57,31 @@ const Chat = ({ actions }) => {
       const [address] = await client.requestAddresses()
 
       if (address) {
+        // Create an account object that x402-fetch expects
+        const account = {
+          address: address,
+          type: 'json-rpc',
+          // Add methods that x402-fetch might need
+          signMessage: async (message) => {
+            return await client.signMessage({ message, account: address })
+          },
+          signTypedData: async (typedData) => {
+            return await client.signTypedData({ ...typedData, account: address })
+          }
+        }
+
+        // Create a new wallet client with the account
+        const clientWithAccount = createWalletClient({
+          account: account,
+          chain: baseSepolia,
+          transport: custom(window.ethereum)
+        })
+
         setWalletAddress(address)
-        setWalletClient(client)
+        setWalletClient(clientWithAccount)
         setIsWalletConnected(true)
         console.log('Wallet connected:', address)
+        console.log('Wallet client with account:', clientWithAccount)
 
         // Get wallet balance
         const balance = await getWalletBalance(address)
@@ -146,6 +167,52 @@ const Chat = ({ actions }) => {
     }
   }, [walletAddress, getWalletBalance])
 
+  const testWalletConnection = useCallback(async () => {
+    if (!walletClient) {
+      console.log('No wallet client available')
+      return
+    }
+
+    try {
+      console.log('Testing wallet connection...')
+      console.log('Wallet client:', walletClient)
+      console.log('Wallet client account:', walletClient.account)
+
+      // Test getting the current account
+      const [address] = await walletClient.requestAddresses()
+      console.log('Current address:', address)
+
+      // Test getting the chain ID
+      const chainId = await walletClient.getChainId()
+      console.log('Chain ID:', chainId)
+      console.log('Expected chain ID for base-sepolia:', baseSepolia.id)
+
+      // Test getting balance
+      const balance = await walletClient.getBalance({ address })
+      console.log('Balance:', balance)
+
+      // Test if account is properly set up for x402
+      if (walletClient.account) {
+        if (typeof walletClient.account === 'string') {
+          console.log('✅ Account properly configured for x402 (string)')
+          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Account ready for x402 payments`)
+        } else if (walletClient.account.address) {
+          console.log('✅ Account properly configured for x402 (object)')
+          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Account ready for x402 payments`)
+        } else {
+          console.log('❌ Account not properly configured for x402')
+          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Account not ready for x402 payments`)
+        }
+      } else {
+        console.log('❌ No account configured')
+        alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ No account configured for x402 payments`)
+      }
+    } catch (error) {
+      console.error('Wallet test failed:', error)
+      alert('Wallet test failed: ' + error.message)
+    }
+  }, [walletClient])
+
   useEffect(() => {
     const connect = async () => {
       console.log('connect')
@@ -155,32 +222,96 @@ const Chat = ({ actions }) => {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' })
           if (accounts.length > 0) {
+            // Create wallet client first
             const client = createWalletClient({
               chain: baseSepolia,
               transport: custom(window.ethereum)
             })
+
+            // Create an account object that x402-fetch expects
+            const account = {
+              address: accounts[0],
+              type: 'json-rpc',
+              // Add methods that x402-fetch might need
+              signMessage: async (message) => {
+                return await client.signMessage({ message, account: accounts[0] })
+              },
+              signTypedData: async (typedData) => {
+                return await client.signTypedData({ ...typedData, account: accounts[0] })
+              }
+            }
+
+            // Create a new wallet client with the account
+            const clientWithAccount = createWalletClient({
+              account: account,
+              chain: baseSepolia,
+              transport: custom(window.ethereum)
+            })
+
             setWalletAddress(accounts[0])
-            setWalletClient(client)
+            setWalletClient(clientWithAccount)
             setIsWalletConnected(true)
             console.log('Auto-connected to wallet:', accounts[0])
+            console.log('Wallet client with account:', clientWithAccount)
 
             // Get wallet balance
             getWalletBalance(accounts[0])
 
-
-            const fetchWithPayment = wrapFetchWithPayment(fetch, client)
+            const fetchWithPayment = wrapFetchWithPayment(fetch, clientWithAccount)
 
             console.log('api url', API_URL)
-            fetchWithPayment(`${API_URL}/weather`, {
+            console.log('Making API call with payment...')
+            fetchWithPayment(`${API_URL}/chat`, {
               method: "GET",
             }).then(async response => {
-              const body = await response.json()
-              console.log(body)
+              console.log('Response status:', response.status)
+              console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
-              const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
-              console.log(paymentResponse)
+              if (response.status === 402) {
+                // Payment required - this is expected behavior
+                const paymentData = await response.json()
+                console.log('Payment required:', paymentData)
+
+                // Add payment message to chat
+                const paymentMessage = {
+                  id: Date.now(),
+                  type: 'assistant',
+                  content: `Payment required to access chat API. Cost: $0.001. Please complete the payment to continue.`,
+                  timestamp: new Date().toLocaleTimeString()
+                }
+                setMessages(prev => [...prev, paymentMessage])
+
+                // You can show a payment modal or handle payment here
+                // For now, we'll just log the payment instructions
+                console.log('Payment instructions:', paymentData)
+              } else {
+                const body = await response.json()
+                console.log('Success response body:', body)
+
+                const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
+                console.log('Payment response:', paymentResponse)
+
+                // Add successful response to chat
+                const successMessage = {
+                  id: Date.now(),
+                  type: 'assistant',
+                  content: `API call successful! Response: ${JSON.stringify(body)}`,
+                  timestamp: new Date().toLocaleTimeString()
+                }
+                setMessages(prev => [...prev, successMessage])
+              }
             }).catch(error => {
-              console.log(error.message)
+              console.log('Error:', error.message)
+              console.log('Error details:', error)
+
+              // Add error message to chat
+              const errorMessage = {
+                id: Date.now(),
+                type: 'assistant',
+                content: `Error making API call: ${error.message}`,
+                timestamp: new Date().toLocaleTimeString()
+              }
+              setMessages(prev => [...prev, errorMessage])
             })
           }
         } catch (error) {
@@ -259,18 +390,72 @@ const Chat = ({ actions }) => {
     setInputValue('')
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = {
+    // Check if wallet is connected
+    if (!isWalletConnected || !walletClient) {
+      const errorMessage = {
         id: Date.now() + 1,
         type: 'assistant',
-        content: `I understand you said: "${inputValue}". This is a simulated response. In a real implementation, this would be connected to your AI model.`,
+        content: 'Please connect your wallet first to make API calls.',
         timestamp: new Date().toLocaleTimeString()
       }
-      setMessages(prev => [...prev, aiResponse])
+      setMessages(prev => [...prev, errorMessage])
       setIsLoading(false)
-    }, 1500)
-  }, [inputValue, isLoading])
+      return
+    }
+
+    try {
+      const fetchWithPayment = wrapFetchWithPayment(fetch, walletClient)
+
+      const response = await fetchWithPayment(`${API_URL}/chat`, {
+        method: "GET",
+      })
+
+      if (response.status === 402) {
+        // Payment required
+        const paymentData = await response.json()
+        console.log('Payment required:', paymentData)
+
+        const paymentMessage = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: `Payment required to access chat API. Cost: $0.001. Please complete the payment to continue.`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, paymentMessage])
+      } else if (response.ok) {
+        const body = await response.json()
+        const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
+        console.log('Payment response:', paymentResponse)
+
+        const aiResponse = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: `API Response: ${JSON.stringify(body)}`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, aiResponse])
+      } else {
+        const errorMessage = {
+          id: Date.now() + 1,
+          type: 'assistant',
+          content: `API Error: ${response.status} ${response.statusText}`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('Error making API call:', error)
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: `Error: ${error.message}`,
+        timestamp: new Date().toLocaleTimeString()
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [inputValue, isLoading, isWalletConnected, walletClient])
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -326,6 +511,63 @@ const Chat = ({ actions }) => {
                   </button>
                 )}
               </div>
+
+              {isWalletConnected && (
+                <button
+                  onClick={async () => {
+                    console.log('Testing payment flow...')
+                    console.log('Wallet client:', walletClient)
+                    console.log('Wallet client account:', walletClient.account)
+
+                    if (!walletClient.account) {
+                      alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
+                      return
+                    }
+
+                    if (typeof walletClient.account === 'string' && !walletClient.account) {
+                      alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
+                      return
+                    }
+
+                    if (typeof walletClient.account === 'object' && !walletClient.account.address) {
+                      alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
+                      return
+                    }
+
+                    const fetchWithPayment = wrapFetchWithPayment(fetch, walletClient)
+                    try {
+                      const response = await fetchWithPayment(`${API_URL}/chat`, {
+                        method: "GET",
+                      })
+                      console.log('Test response status:', response.status)
+                      if (response.status === 402) {
+                        const paymentData = await response.json()
+                        console.log('Test payment data:', paymentData)
+                        alert('Payment required! Check console for details.')
+                      } else {
+                        const body = await response.json()
+                        console.log('Test success:', body)
+                        alert('Payment successful! Check console for details.')
+                      }
+                    } catch (error) {
+                      console.error('Test error:', error)
+                      alert('Test failed: ' + error.message)
+                    }
+                  }}
+                  className={styles.testButton}
+                >
+                  🧪 Test Payment
+                </button>
+              )}
+
+              {isWalletConnected && (
+                <button
+                  onClick={testWalletConnection}
+                  className={styles.testButton}
+                >
+                  🔍 Test Wallet
+                </button>
+              )}
 
               <select
                 value={selectedModel}
