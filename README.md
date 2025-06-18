@@ -10,3 +10,8 @@ yarn install
 ```sh
 yarn start
 ```
+
+## Service
+```sh
+yarn service
+```

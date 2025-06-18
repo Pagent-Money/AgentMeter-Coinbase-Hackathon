@@ -13,7 +13,8 @@
     "build:service:dev": "cross-env NODE_ENV=development APP_ENV=development TARGET=service webpack",
     "client": "cross-env NODE_ENV=production http-server static",
     "server": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/app.js",
-    "service": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/service.js",
+    "service:dev": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/service.js",
+    "service": "npm run build:service && npm run service:dev",
     "start": "cross-env NODE_ENV=development APP_ENV=development TARGET=browser webpack-dev-server --host 0.0.0.0"
   },
   "dependencies": {
