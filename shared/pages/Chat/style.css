@@ -1,0 +1,691 @@
+.chat {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+    width: 100%;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+
+    .headerLeft {
+      flex: 1;
+      min-width: 0;
+
+      .title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .subtitle {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin: 0.25rem 0 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .headerRight {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+
+      .modelSelect {
+        padding: 0.5rem 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        background: white;
+        font-size: 0.875rem;
+        color: #374151;
+        cursor: pointer;
+        transition: border-color 0.3s;
+        min-width: 120px;
+
+        &:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+      }
+
+      .clearButton {
+        padding: 0.5rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+        color: #6b7280;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        white-space: nowrap;
+
+        &:hover {
+          background: #f9fafb;
+          border-color: #d1d5db;
+          color: #374151;
+        }
+      }
+    }
+  }
+
+  .messagesContainer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0;
+    background: #f8fafc;
+    min-height: 0;
+
+    .messages {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      width: 100%;
+    }
+  }
+
+  .message {
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease-in-out;
+
+    .messageContent {
+      max-width: 100%;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .messageHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+
+      .messageAuthor {
+        font-weight: 600;
+        color: #374151;
+        flex-shrink: 0;
+      }
+
+      .messageTime {
+        color: #9ca3af;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+      }
+    }
+
+    .messageText {
+      line-height: 1.6;
+      color: #1f2937;
+      font-size: 1rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+  }
+
+  .userMessage {
+    .messageContent {
+      background: #3b82f6;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 18px 18px 4px 18px;
+      margin-left: auto;
+      max-width: 80%;
+      min-width: 200px;
+
+      .messageHeader {
+        .messageAuthor {
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .messageTime {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+
+      .messageText {
+        color: white;
+      }
+    }
+  }
+
+  .assistantMessage {
+    .messageContent {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 18px 18px 18px 4px;
+      border: 1px solid #e5e7eb;
+      max-width: 80%;
+      min-width: 200px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  .typingIndicator {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+
+    span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+      animation: typing 1.4s infinite ease-in-out;
+
+      &:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+
+      &:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+    }
+  }
+
+  .inputContainer {
+    padding: 1.5rem 2rem;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+
+    .inputWrapper {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.75rem;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .input {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 24px;
+      font-size: 1rem;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      transition: all 0.3s;
+      font-family: inherit;
+      min-height: 24px;
+      max-height: 120px;
+      width: 100%;
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      &:disabled {
+        background: #f9fafb;
+        color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+
+    .sendButton {
+      width: 48px;
+      height: 48px;
+      border: none;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &:hover:not(.sendButtonDisabled) {
+        background: #2563eb;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      &:active:not(.sendButtonDisabled) {
+        transform: scale(0.95);
+      }
+    }
+
+    .sendButtonDisabled {
+      background: #e5e7eb;
+      color: #9ca3af;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .inputFooter {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
+
+      .inputHint {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        flex: 1;
+      }
+
+      .modelInfo {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-weight: 500;
+        flex-shrink: 0;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Tablet Responsive Design */
+@media (max-width: 1024px) {
+  .chat {
+    .container {
+      max-width: 100%;
+      margin: 0;
+      box-shadow: none;
+    }
+
+    .header {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .messagesContainer {
+      .messages {
+        padding: 0 1.5rem;
+      }
+    }
+
+    .inputContainer {
+      padding: 1.25rem 1.5rem;
+    }
+  }
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .chat {
+    .container {
+      height: 100vh;
+      width: 100%;
+    }
+
+    .header {
+      padding: 1rem;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+
+      .headerLeft {
+        text-align: center;
+
+        .title {
+          font-size: 1.5rem;
+        }
+
+        .subtitle {
+          font-size: 0.8rem;
+        }
+      }
+
+      .headerRight {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.75rem;
+
+        .modelSelect {
+          flex: 1;
+          min-width: 100px;
+          font-size: 0.8rem;
+          padding: 0.5rem 0.75rem;
+        }
+
+        .clearButton {
+          font-size: 0.8rem;
+          padding: 0.5rem 0.75rem;
+        }
+      }
+    }
+
+    .messagesContainer {
+      .messages {
+        padding: 0 1rem;
+      }
+    }
+
+    .message {
+      margin-bottom: 1rem;
+
+      .messageContent {
+        padding: 0.75rem 1rem;
+      }
+
+      .userMessage .messageContent,
+      .assistantMessage .messageContent {
+        max-width: 90%;
+        min-width: 150px;
+      }
+
+      .messageHeader {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+
+        .messageTime {
+          font-size: 0.7rem;
+        }
+      }
+
+      .messageText {
+        font-size: 0.9rem;
+      }
+    }
+
+    .inputContainer {
+      padding: 1rem;
+
+      .inputWrapper {
+        gap: 0.5rem;
+      }
+
+      .input {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        min-height: 20px;
+      }
+
+      .sendButton {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+      }
+
+      .inputFooter {
+        padding-left: 1rem;
+        padding-right: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+
+        .inputHint {
+          font-size: 0.7rem;
+        }
+
+        .modelInfo {
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+}
+
+/* Small Mobile Responsive Design */
+@media (max-width: 480px) {
+  .chat {
+    .header {
+      padding: 0.75rem;
+
+      .headerLeft {
+        .title {
+          font-size: 1.25rem;
+        }
+
+        .subtitle {
+          font-size: 0.75rem;
+        }
+      }
+
+      .headerRight {
+        .modelSelect {
+          font-size: 0.75rem;
+          padding: 0.4rem 0.6rem;
+        }
+
+        .clearButton {
+          font-size: 0.75rem;
+          padding: 0.4rem 0.6rem;
+        }
+      }
+    }
+
+    .messagesContainer {
+      .messages {
+        padding: 0 0.75rem;
+      }
+    }
+
+    .message {
+      margin-bottom: 0.75rem;
+
+      .userMessage .messageContent,
+      .assistantMessage .messageContent {
+        max-width: 95%;
+        min-width: 120px;
+        padding: 0.6rem 0.8rem;
+      }
+
+      .messageHeader {
+        font-size: 0.75rem;
+
+        .messageTime {
+          font-size: 0.65rem;
+        }
+      }
+
+      .messageText {
+        font-size: 0.85rem;
+        line-height: 1.5;
+      }
+    }
+
+    .inputContainer {
+      padding: 0.75rem;
+
+      .input {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 18px;
+      }
+
+      .sendButton {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+
+      .inputFooter {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+
+        .inputHint {
+          font-size: 0.65rem;
+        }
+
+        .modelInfo {
+          font-size: 0.65rem;
+        }
+      }
+    }
+  }
+}
+
+/* Extra Small Mobile Responsive Design */
+@media (max-width: 360px) {
+  .chat {
+    .header {
+      padding: 0.5rem;
+
+      .headerLeft {
+        .title {
+          font-size: 1.1rem;
+        }
+
+        .subtitle {
+          font-size: 0.7rem;
+        }
+      }
+
+      .headerRight {
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .modelSelect,
+        .clearButton {
+          width: 100%;
+          text-align: center;
+        }
+      }
+    }
+
+    .messagesContainer {
+      .messages {
+        padding: 0 0.5rem;
+      }
+    }
+
+    .message {
+      .userMessage .messageContent,
+      .assistantMessage .messageContent {
+        max-width: 98%;
+        min-width: 100px;
+        padding: 0.5rem 0.7rem;
+      }
+
+      .messageText {
+        font-size: 0.8rem;
+      }
+    }
+
+    .inputContainer {
+      padding: 0.5rem;
+
+      .input {
+        padding: 0.5rem 0.7rem;
+        font-size: 0.8rem;
+      }
+
+      .sendButton {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+      }
+    }
+  }
+}
+
+/* Landscape Mobile Optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+  .chat {
+    .container {
+      height: 100vh;
+    }
+
+    .header {
+      padding: 0.5rem 1rem;
+      flex-direction: row;
+
+      .headerLeft {
+        text-align: left;
+        flex: 1;
+
+        .title {
+          font-size: 1.25rem;
+        }
+
+        .subtitle {
+          font-size: 0.75rem;
+        }
+      }
+
+      .headerRight {
+        flex-direction: row;
+        gap: 0.5rem;
+      }
+    }
+
+    .messagesContainer {
+      padding: 0.5rem 0;
+    }
+
+    .inputContainer {
+      padding: 0.75rem 1rem;
+
+      .input {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+
+      .sendButton {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+      }
+    }
+  }
+} 
