@@ -2,11 +2,12 @@ import React, { Fragment, useEffect, useState } from 'react'
 import classNames from 'classnames'
 import { createPortal } from 'react-dom'
 import { Outlet } from 'react-router'
-import Header from 'components/Header'
 import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { withRouter } from 'utils/withRouter'
 import Title from 'components/DocumentTitle'
+import Header from 'components/Header'
+import Footer from 'components/Footer'
 import 'resources/fonts/style.css'
 import { Buffer } from 'safe-buffer'
 import styles from './style.css'
@@ -22,8 +23,9 @@ const Root = ({ location, history, actions }) => {
     <Fragment>
       <Title render={title} />
       <div className={classNames(styles.root)}>
-        hello, {title}
+        <Header />
         <Outlet />
+        <Footer />
       </div>
     </Fragment>
   )

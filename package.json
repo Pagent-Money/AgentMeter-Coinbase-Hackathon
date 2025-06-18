@@ -14,7 +14,8 @@
     "client": "cross-env NODE_ENV=production http-server static",
     "server": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/app.js",
     "service": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/service.js",
-    "start": "cross-env NODE_ENV=development APP_ENV=development TARGET=browser webpack-dev-server --host 0.0.0.0"
+    "start": "cross-env NODE_ENV=development APP_ENV=development TARGET=browser webpack-dev-server --host 0.0.0.0",
+    "seed": "node scripts/seed-database.js"
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.15.0",
@@ -37,6 +38,7 @@
     "jsonwebtoken": "^9.0.0",
     "lib0": "^0.2.108",
     "method-override": "^3.0.0",
+    "mongodb": "^6.17.0",
     "mongoose": "^6.5.1",
     "morgan": "^1.10.0",
     "nanoid": "3.3.4",
