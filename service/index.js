@@ -6,6 +6,7 @@ import { paymentMiddleware } from 'x402-express'
 import cors from 'cors'
 import { MongoClient } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
+import { authenticateProject, rateLimit } from './middleware/auth.js'
 
 const port = 4021
 const app = new Express()
@@ -32,6 +33,9 @@ connectToDatabase()
 // Enable CORS for all routes
 app.use(cors())
 app.use(Express.json())
+
+// Apply rate limiting to all routes
+app.use(rateLimit)
 
 app.use(
   paymentMiddleware(
@@ -219,6 +223,9 @@ app.delete('/api/project/:id', async (req, res) => {
   }
 })
 
+// Apply authentication middleware to metering endpoints
+app.use('/api/meter', authenticateProject)
+
 // Meter events API
 app.post('/api/meter/event', async (req, res) => {
   try {
@@ -232,6 +239,14 @@ app.post('/api/meter/event', async (req, res) => {
       return res.status(400).json({ error: 'Project ID and Agent ID are required' })
     }
 
+    // Use project settings for pricing if available, otherwise use defaults
+    const project = req.project
+    const settings = project?.settings || {
+      requestPricing: 0.001,
+      inputTokenPricing: 0.002,
+      outputTokenPricing: 0.004
+    }
+
     const event = {
       project_id,
       agent_id,
@@ -240,8 +255,8 @@ app.post('/api/meter/event', async (req, res) => {
       tokens_out: tokens_out || 0,
       api_calls: api_calls || 1,
       timestamp: new Date(),
-      request_cost: 0.001 * (api_calls || 1),
-      token_cost: (0.002 * (tokens_in || 0) / 1000) + (0.004 * (tokens_out || 0) / 1000),
+      request_cost: settings.requestPricing * (api_calls || 1),
+      token_cost: (settings.inputTokenPricing * (tokens_in || 0) / 1000) + (settings.outputTokenPricing * (tokens_out || 0) / 1000),
       total_cost: 0
     }
 

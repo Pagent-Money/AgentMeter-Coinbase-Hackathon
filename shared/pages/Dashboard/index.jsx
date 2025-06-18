@@ -17,6 +17,9 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   const [showModal, setShowModal] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectDescription, setNewProjectDescription] = useState('')
+  const [selectedAgent, setSelectedAgent] = useState('all')
+  const [timeFilter, setTimeFilter] = useState('24h')
+  const [autoRefresh, setAutoRefresh] = useState(true)
 
   // Load projects on component mount
   useEffect(() => {
@@ -33,9 +36,77 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   // Load meter events for selected project
   useEffect(() => {
     if (selectedProject) {
-      actions.loadMeterEvents({ project_id: selectedProject, limit: 50 })
+      const params = { 
+        project_id: selectedProject, 
+        limit: 100,
+        agent_id: selectedAgent !== 'all' ? selectedAgent : undefined
+      }
+      actions.loadMeterEvents(params)
     }
-  }, [selectedProject, actions])
+  }, [selectedProject, selectedAgent, actions])
+
+  // Auto-refresh meter events every 30 seconds
+  useEffect(() => {
+    if (!autoRefresh || !selectedProject) return
+
+    const interval = setInterval(() => {
+      const params = { 
+        project_id: selectedProject, 
+        limit: 100,
+        agent_id: selectedAgent !== 'all' ? selectedAgent : undefined
+      }
+      actions.loadMeterEvents(params)
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [autoRefresh, selectedProject, selectedAgent, actions])
+
+  // Calculate filtered events based on time filter
+  const getFilteredEvents = useCallback(() => {
+    if (!meterEvents.length) return []
+    
+    const now = new Date()
+    const timeFilters = {
+      '1h': new Date(now.getTime() - 60 * 60 * 1000),
+      '24h': new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      '7d': new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      '30d': new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    }
+    
+    if (timeFilter === 'all') return meterEvents
+    
+    const filterTime = timeFilters[timeFilter]
+    return meterEvents.filter(event => new Date(event.timestamp) >= filterTime)
+  }, [meterEvents, timeFilter])
+
+  // Calculate revenue statistics
+  const getRevenueStats = useCallback(() => {
+    const filteredEvents = getFilteredEvents()
+    
+    const totalRequestCost = filteredEvents.reduce((sum, event) => sum + event.request_cost, 0)
+    const totalTokenCost = filteredEvents.reduce((sum, event) => sum + event.token_cost, 0)
+    const totalCost = totalRequestCost + totalTokenCost
+    
+    const totalApiCalls = filteredEvents.reduce((sum, event) => sum + event.api_calls, 0)
+    const totalTokensIn = filteredEvents.reduce((sum, event) => sum + event.tokens_in, 0)
+    const totalTokensOut = filteredEvents.reduce((sum, event) => sum + event.tokens_out, 0)
+    
+    return {
+      totalRequestCost,
+      totalTokenCost,
+      totalCost,
+      totalApiCalls,
+      totalTokensIn,
+      totalTokensOut,
+      avgCostPerRequest: totalApiCalls > 0 ? totalCost / totalApiCalls : 0,
+      avgCostPerToken: (totalTokensIn + totalTokensOut) > 0 ? totalCost / ((totalTokensIn + totalTokensOut) / 1000) : 0
+    }
+  }, [getFilteredEvents])
+
+  // Get unique agents for filtering
+  const getUniqueAgents = useCallback(() => {
+    return Array.from(new Set(meterEvents.map(event => event.agent_id)))
+  }, [meterEvents])
 
   const openModal = useCallback(() => {
     setShowModal(true)
@@ -78,6 +149,9 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   }, [actions, selectedProject, projects])
 
   const selectedProjectData = projects.find(p => p.id === selectedProject)
+  const filteredEvents = getFilteredEvents()
+  const revenueStats = getRevenueStats()
+  const uniqueAgents = getUniqueAgents()
 
   return (
     <Fragment>
@@ -296,11 +370,12 @@ meter = AgentMeter(
               {/* Stats Overview */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {[
-                  { title: 'API Requests', subtitle: 'Request-based metering', value: meterEvents.reduce((sum, event) => sum + event.api_calls, 0).toLocaleString(), change: '+15%', icon: '🔄' },
-                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: (meterEvents.reduce((sum, event) => sum + event.tokens_in, 0) / 1000000).toFixed(1) + 'M', change: '+22%', icon: '📥' },
-                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: (meterEvents.reduce((sum, event) => sum + event.tokens_out, 0) / 1000000).toFixed(1) + 'M', change: '+18%', icon: '📤' },
-                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$' + meterEvents.reduce((sum, event) => sum + event.request_cost, 0).toFixed(2), change: '+15%', icon: '💰' },
-                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$' + meterEvents.reduce((sum, event) => sum + event.token_cost, 0).toFixed(2), change: '+20%', icon: '💵' }
+                  { title: 'API Requests', subtitle: 'Request-based metering', value: revenueStats.totalApiCalls.toLocaleString(), change: '+15%', icon: '🔄' },
+                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: (revenueStats.totalTokensIn / 1000000).toFixed(1) + 'M', change: '+22%', icon: '📥' },
+                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: (revenueStats.totalTokensOut / 1000000).toFixed(1) + 'M', change: '+18%', icon: '📤' },
+                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$' + revenueStats.totalRequestCost.toFixed(3), change: '+15%', icon: '💰' },
+                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$' + revenueStats.totalTokenCost.toFixed(3), change: '+20%', icon: '💵' },
+                  { title: 'Total Revenue', subtitle: 'Combined revenue', value: '$' + revenueStats.totalCost.toFixed(3), change: '+18%', icon: '💎' }
                 ].map((stat, index) => (
                   <div key={index} style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -326,21 +401,25 @@ meter = AgentMeter(
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>Top Agents</h3>
                   {(() => {
-                    const agentStats = meterEvents.reduce((acc, event) => {
+                    const agentStats = filteredEvents.reduce((acc, event) => {
                       if (!acc[event.agent_id]) {
-                        acc[event.agent_id] = 0
+                        acc[event.agent_id] = { calls: 0, revenue: 0 }
                       }
-                      acc[event.agent_id] += event.api_calls
+                      acc[event.agent_id].calls += event.api_calls
+                      acc[event.agent_id].revenue += event.total_cost
                       return acc
                     }, {})
 
                     return Object.entries(agentStats)
-                      .sort(([,a], [,b]) => b - a)
-                      .slice(0, 3)
-                      .map(([agent, calls], index) => (
-                        <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 2 ? '1px solid #f3f4f6' : 'none' }}>
-                          <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
-                          <span style={{ color: '#6b7280' }}>{calls} calls</span>
+                      .sort(([,a], [,b]) => b.revenue - a.revenue)
+                      .slice(0, 5)
+                      .map(([agent, stats], index) => (
+                        <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 4 ? '1px solid #f3f4f6' : 'none' }}>
+                          <div>
+                            <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
+                            <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{stats.calls} calls</p>
+                          </div>
+                          <span style={{ color: '#10b981', fontWeight: '500' }}>${stats.revenue.toFixed(3)}</span>
                         </div>
                       ))
                   })()}
@@ -351,17 +430,36 @@ meter = AgentMeter(
               <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>Recent Metering Events</h3>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <select style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}>
-                      <option>All Agents</option>
-                      {Array.from(new Set(meterEvents.map(e => e.agent_id))).map(agent => (
-                        <option key={agent}>{agent}</option>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.875rem', color: '#374151' }}>
+                      <input
+                        type="checkbox"
+                        checked={autoRefresh}
+                        onChange={(e) => setAutoRefresh(e.target.checked)}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Auto-refresh
+                    </label>
+                    <select 
+                      value={selectedAgent} 
+                      onChange={(e) => setSelectedAgent(e.target.value)}
+                      style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    >
+                      <option value="all">All Agents</option>
+                      {uniqueAgents.map(agent => (
+                        <option key={agent} value={agent}>{agent}</option>
                       ))}
                     </select>
-                    <select style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}>
-                      <option>Last 24 hours</option>
-                      <option>Last 7 days</option>
-                      <option>Last 30 days</option>
+                    <select 
+                      value={timeFilter} 
+                      onChange={(e) => setTimeFilter(e.target.value)}
+                      style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}
+                    >
+                      <option value="1h">Last 1 hour</option>
+                      <option value="24h">Last 24 hours</option>
+                      <option value="7d">Last 7 days</option>
+                      <option value="30d">Last 30 days</option>
+                      <option value="all">All time</option>
                     </select>
                   </div>
                 </div>
@@ -386,12 +484,12 @@ meter = AgentMeter(
                         <tr>
                           <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading events...</td>
                         </tr>
-                      ) : meterEvents.length === 0 ? (
+                      ) : filteredEvents.length === 0 ? (
                         <tr>
-                          <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>No meter events found</td>
+                          <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>No meter events found for the selected filters</td>
                         </tr>
                       ) : (
-                        meterEvents.map(event => (
+                        filteredEvents.map(event => (
                           <tr key={event.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                             <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.agent_id}</td>
                             <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.user_id}</td>
