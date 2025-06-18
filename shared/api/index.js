@@ -71,7 +71,7 @@ export const apiCreator = (baseUrl, baseOptions = {}) => async (method = 'GET', 
   })
 }
 
-const responseTransformer = res => res.data
+const responseTransformer = res => res // .data
 const errorTransformer = res => Promise.reject({ message: res.message })
 
 export const meterApi = apiCreator(`${API_URL}/api`, { responseTransformer, errorTransformer })

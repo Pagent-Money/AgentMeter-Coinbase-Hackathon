@@ -11,41 +11,54 @@ import * as projectActions from 'actions/project'
 import classNames from 'classnames'
 import styles from './style.css'
 
-const Dashboard = ({ actions }) => {
+const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, error }) => {
   const [activeTab, setActiveTab] = useState('projects')
-  const [selectedProject, setSelectedProject] = useState('proj_123abc')
+  const [selectedProject, setSelectedProject] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
+  const [newProjectDescription, setNewProjectDescription] = useState('')
 
-  const projects = [
-    { id: 'proj_123abc', name: 'AI Assistant Bot', created: '2024-01-15', status: 'Active' },
-    { id: 'proj_456def', name: 'Content Generator', created: '2024-02-01', status: 'Active' },
-    { id: 'proj_789ghi', name: 'Data Analyzer', created: '2024-02-10', status: 'Paused' }
-  ]
+  // Load projects on component mount
+  useEffect(() => {
+    actions.loadProjects()
+  }, [actions])
 
-  const meterEvents = [
-    { id: 1, agent_id: 'assistant-v1', user_id: 'user_123', tokens_in: 150, tokens_out: 75, api_calls: 1, timestamp: '2024-02-15 14:30:22', request_cost: 0.001, token_cost: 0.005, total_cost: 0.006 },
-    { id: 2, agent_id: 'content-gen-v2', user_id: 'user_456', tokens_in: 320, tokens_out: 180, api_calls: 1, timestamp: '2024-02-15 14:25:15', request_cost: 0.001, token_cost: 0.012, total_cost: 0.013 },
-    { id: 3, agent_id: 'assistant-v1', user_id: 'user_789', tokens_in: 89, tokens_out: 45, api_calls: 1, timestamp: '2024-02-15 14:20:08', request_cost: 0.001, token_cost: 0.003, total_cost: 0.004 }
-  ]
+  // Set first project as selected when projects load
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProject) {
+      setSelectedProject(projects[0].id)
+    }
+  }, [projects, selectedProject])
+
+  // Load meter events for selected project
+  useEffect(() => {
+    if (selectedProject) {
+      actions.loadMeterEvents({ project_id: selectedProject, limit: 50 })
+    }
+  }, [selectedProject, actions])
 
   const openModal = useCallback(() => {
     setShowModal(true)
     setNewProjectName('')
+    setNewProjectDescription('')
   }, [])
 
   const closeModal = useCallback(() => {
     setShowModal(false)
     setNewProjectName('')
+    setNewProjectDescription('')
   }, [])
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
     if (newProjectName.trim()) {
-      actions.createProject({ name: newProjectName.trim() })
+      actions.createProject({ 
+        name: newProjectName.trim(),
+        description: newProjectDescription.trim()
+      })
       closeModal()
     }
-  }, [newProjectName, actions, closeModal])
+  }, [newProjectName, newProjectDescription, actions, closeModal])
 
   const handleKeyPress = useCallback((e) => {
     if (e.key === 'Enter') {
@@ -54,6 +67,17 @@ const Dashboard = ({ actions }) => {
       closeModal()
     }
   }, [handleSubmit, closeModal])
+
+  const handleDeleteProject = useCallback((projectId) => {
+    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      actions.deleteProject({ id: projectId })
+      if (selectedProject === projectId) {
+        setSelectedProject(projects.length > 1 ? projects.find(p => p.id !== projectId)?.id : null)
+      }
+    }
+  }, [actions, selectedProject, projects])
+
+  const selectedProjectData = projects.find(p => p.id === selectedProject)
 
   return (
     <Fragment>
@@ -65,6 +89,20 @@ const Dashboard = ({ actions }) => {
             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: '#1f2937' }}>Dashboard</h1>
             <p style={{ color: '#6b7280', fontSize: '1.1rem' }}>Manage your agents, track usage, and monitor revenue</p>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <div style={{ 
+              backgroundColor: '#fef2f2', 
+              border: '1px solid #fecaca', 
+              color: '#dc2626', 
+              padding: '1rem', 
+              borderRadius: '6px', 
+              marginBottom: '1rem' 
+            }}>
+              Error: {error}
+            </div>
+          )}
 
           {/* Tab Navigation */}
           <div style={{ marginBottom: '2rem', borderBottom: '2px solid #e5e7eb' }}>
@@ -107,98 +145,146 @@ const Dashboard = ({ actions }) => {
                     <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={openModal}>+ New Project</button>
                   </div>
 
-                  {projects.map(project => (
-                    <div key={project.id}
-                         onClick={() => setSelectedProject(project.id)}
-                         style={{
-                           padding: '1rem',
-                           border: selectedProject === project.id ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                           borderRadius: '6px',
-                           marginBottom: '0.75rem',
-                           cursor: 'pointer',
-                           backgroundColor: selectedProject === project.id ? '#eff6ff' : 'white'
-                         }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <h4 style={{ fontWeight: '500', color: '#1f2937' }}>{project.name}</h4>
-                          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>ID: {project.id}</p>
-                          <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Created: {project.created}</p>
-                        </div>
-                        <span style={{
-                          padding: '0.25rem 0.75rem',
-                          borderRadius: '20px',
-                          fontSize: '0.75rem',
-                          backgroundColor: project.status === 'Active' ? '#10b981' : '#f59e0b',
-                          color: 'white'
-                        }}>
-                          {project.status}
-                        </span>
-                      </div>
+                  {loading ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading projects...</div>
+                  ) : projects.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                      No projects yet. Create your first project to get started.
                     </div>
-                  ))}
+                  ) : (
+                    projects.map(project => (
+                      <div key={project.id}
+                           onClick={() => setSelectedProject(project.id)}
+                           style={{
+                             padding: '1rem',
+                             border: selectedProject === project.id ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                             borderRadius: '6px',
+                             marginBottom: '0.75rem',
+                             cursor: 'pointer',
+                             backgroundColor: selectedProject === project.id ? '#eff6ff' : 'white'
+                           }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ fontWeight: '500', color: '#1f2937' }}>{project.name}</h4>
+                            {project.description && (
+                              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>{project.description}</p>
+                            )}
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>ID: {project.id}</p>
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>Created: {project.created}</p>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                            <span style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '20px',
+                              fontSize: '0.75rem',
+                              backgroundColor: project.status === 'Active' ? '#10b981' : '#f59e0b',
+                              color: 'white'
+                            }}>
+                              {project.status}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteProject(project.id)
+                              }}
+                              style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                border: '1px solid #ef4444',
+                                borderRadius: '4px',
+                                background: 'white',
+                                color: '#ef4444',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* Project Details */}
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1.5rem' }}>Project Configuration</h3>
 
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>Project ID</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <input
-                        type="text"
-                        value={selectedProject}
-                        readOnly
-                        style={{
-                          flex: 1,
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          backgroundColor: '#f9fafb',
-                          fontFamily: 'monospace'
-                        }}
-                      />
-                      <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>📋</button>
-                    </div>
-                  </div>
+                  {selectedProjectData ? (
+                    <>
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>Project ID</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="text"
+                            value={selectedProjectData.id}
+                            readOnly
+                            style={{
+                              flex: 1,
+                              padding: '0.75rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              backgroundColor: '#f9fafb',
+                              fontFamily: 'monospace'
+                            }}
+                          />
+                          <button 
+                            onClick={() => navigator.clipboard.writeText(selectedProjectData.id)}
+                            style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                          >
+                            📋
+                          </button>
+                        </div>
+                      </div>
 
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>Project Secret Key</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <input
-                        type="password"
-                        value="sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890"
-                        readOnly
-                        style={{
-                          flex: 1,
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          backgroundColor: '#f9fafb',
-                          fontFamily: 'monospace'
-                        }}
-                      />
-                      <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>👁️</button>
-                      <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>📋</button>
-                    </div>
-                    <p style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.5rem' }}>⚠️ Keep this secret key secure. It provides full access to your project.</p>
-                  </div>
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>Project Secret Key</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <input
+                            type="password"
+                            value={selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890'}
+                            readOnly
+                            style={{
+                              flex: 1,
+                              padding: '0.75rem',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              backgroundColor: '#f9fafb',
+                              fontFamily: 'monospace'
+                            }}
+                          />
+                          <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>👁️</button>
+                          <button 
+                            onClick={() => navigator.clipboard.writeText(selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890')}
+                            style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                          >
+                            📋
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.5rem' }}>⚠️ Keep this secret key secure. It provides full access to your project.</p>
+                      </div>
 
-                  <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '6px', marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontWeight: '500', marginBottom: '0.5rem', color: '#1f2937' }}>SDK Integration Example</h4>
-                    <pre style={{ fontSize: '0.8rem', color: '#374151', overflow: 'auto' }}>{`from agentmeter import AgentMeter
+                      <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '6px', marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontWeight: '500', marginBottom: '0.5rem', color: '#1f2937' }}>SDK Integration Example</h4>
+                        <pre style={{ fontSize: '0.8rem', color: '#374151', overflow: 'auto' }}>{`from agentmeter import AgentMeter
 
 meter = AgentMeter(
-    project_id="${selectedProject}",
-    project_secret_key="sk_live_abc123...",
+    project_id="${selectedProjectData.id}",
+    project_secret_key="${selectedProjectData.secret_key || 'sk_live_abc123...'}",
     agent_id="your-agent-id"
 )`}</pre>
-                  </div>
+                      </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className={styles.button} style={{ flex: 1, fontSize: '0.9rem' }}>🔄 Regenerate Keys</button>
-                    <button className={classNames(styles.button, styles.buttonSecondary)} style={{ flex: 1, fontSize: '0.9rem' }}>⚙️ Settings</button>
-                  </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className={styles.button} style={{ flex: 1, fontSize: '0.9rem' }}>🔄 Regenerate Keys</button>
+                        <button className={classNames(styles.button, styles.buttonSecondary)} style={{ flex: 1, fontSize: '0.9rem' }}>⚙️ Settings</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                      Select a project to view its configuration
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -210,11 +296,11 @@ meter = AgentMeter(
               {/* Stats Overview */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {[
-                  { title: 'API Requests', subtitle: 'Request-based metering', value: '12,345', change: '+15%', icon: '🔄' },
-                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: '2.5M', change: '+22%', icon: '📥' },
-                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: '1.8M', change: '+18%', icon: '📤' },
-                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$12.35', change: '+15%', icon: '💰' },
-                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$33.32', change: '+20%', icon: '💵' }
+                  { title: 'API Requests', subtitle: 'Request-based metering', value: meterEvents.reduce((sum, event) => sum + event.api_calls, 0).toLocaleString(), change: '+15%', icon: '🔄' },
+                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: (meterEvents.reduce((sum, event) => sum + event.tokens_in, 0) / 1000000).toFixed(1) + 'M', change: '+22%', icon: '📥' },
+                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: (meterEvents.reduce((sum, event) => sum + event.tokens_out, 0) / 1000000).toFixed(1) + 'M', change: '+18%', icon: '📤' },
+                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$' + meterEvents.reduce((sum, event) => sum + event.request_cost, 0).toFixed(2), change: '+15%', icon: '💰' },
+                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$' + meterEvents.reduce((sum, event) => sum + event.token_cost, 0).toFixed(2), change: '+20%', icon: '💵' }
                 ].map((stat, index) => (
                   <div key={index} style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -239,12 +325,25 @@ meter = AgentMeter(
 
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937', marginBottom: '1rem' }}>Top Agents</h3>
-                  {['assistant-v1', 'content-gen-v2', 'data-analyzer-v1'].map((agent, index) => (
-                    <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 2 ? '1px solid #f3f4f6' : 'none' }}>
-                      <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
-                      <span style={{ color: '#6b7280' }}>{Math.floor(Math.random() * 1000) + 500} calls</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const agentStats = meterEvents.reduce((acc, event) => {
+                      if (!acc[event.agent_id]) {
+                        acc[event.agent_id] = 0
+                      }
+                      acc[event.agent_id] += event.api_calls
+                      return acc
+                    }, {})
+                    
+                    return Object.entries(agentStats)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 3)
+                      .map(([agent, calls], index) => (
+                        <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 2 ? '1px solid #f3f4f6' : 'none' }}>
+                          <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
+                          <span style={{ color: '#6b7280' }}>{calls} calls</span>
+                        </div>
+                      ))
+                  })()}
                 </div>
               </div>
 
@@ -255,8 +354,9 @@ meter = AgentMeter(
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <select style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}>
                       <option>All Agents</option>
-                      <option>assistant-v1</option>
-                      <option>content-gen-v2</option>
+                      {Array.from(new Set(meterEvents.map(e => e.agent_id))).map(agent => (
+                        <option key={agent}>{agent}</option>
+                      ))}
                     </select>
                     <select style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '6px' }}>
                       <option>Last 24 hours</option>
@@ -282,19 +382,29 @@ meter = AgentMeter(
                       </tr>
                     </thead>
                     <tbody>
-                      {meterEvents.map(event => (
-                        <tr key={event.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.agent_id}</td>
-                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.user_id}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>{event.api_calls}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_in.toLocaleString()}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_out.toLocaleString()}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: '#059669' }}>${event.request_cost.toFixed(3)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', color: '#dc2626' }}>${event.token_cost.toFixed(3)}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>${event.total_cost.toFixed(3)}</td>
-                          <td style={{ padding: '0.75rem', color: '#6b7280', fontSize: '0.875rem' }}>{event.timestamp}</td>
+                      {loading ? (
+                        <tr>
+                          <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading events...</td>
                         </tr>
-                      ))}
+                      ) : meterEvents.length === 0 ? (
+                        <tr>
+                          <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>No meter events found</td>
+                        </tr>
+                      ) : (
+                        meterEvents.map(event => (
+                          <tr key={event.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                            <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.agent_id}</td>
+                            <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.user_id}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>{event.api_calls}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_in.toLocaleString()}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_out.toLocaleString()}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#059669' }}>${event.request_cost.toFixed(3)}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#dc2626' }}>${event.token_cost.toFixed(3)}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>${event.total_cost.toFixed(3)}</td>
+                            <td style={{ padding: '0.75rem', color: '#6b7280', fontSize: '0.875rem' }}>{new Date(event.timestamp).toLocaleString()}</td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -550,6 +660,32 @@ meter = AgentMeter(
                 </p>
               </div>
 
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  Description (Optional)
+                </label>
+                <textarea
+                  value={newProjectDescription}
+                  onChange={(e) => setNewProjectDescription(e.target.value)}
+                  placeholder="Enter project description..."
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    minHeight: '80px',
+                    resize: 'vertical',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                />
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                  Add a description to help you remember what this project is for.
+                </p>
+              </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
@@ -578,30 +714,30 @@ meter = AgentMeter(
                 </button>
                 <button
                   type="submit"
-                  disabled={!newProjectName.trim()}
+                  disabled={!newProjectName.trim() || loading}
                   style={{
                     padding: '0.75rem 1.5rem',
                     border: 'none',
                     borderRadius: '6px',
-                    background: newProjectName.trim() ? '#2563eb' : '#9ca3af',
+                    background: newProjectName.trim() && !loading ? '#2563eb' : '#9ca3af',
                     color: 'white',
                     fontSize: '0.875rem',
                     fontWeight: '500',
-                    cursor: newProjectName.trim() ? 'pointer' : 'not-allowed',
+                    cursor: newProjectName.trim() && !loading ? 'pointer' : 'not-allowed',
                     transition: 'all 0.2s'
                   }}
                   onMouseEnter={(e) => {
-                    if (newProjectName.trim()) {
+                    if (newProjectName.trim() && !loading) {
                       e.target.style.backgroundColor = '#1d4ed8'
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (newProjectName.trim()) {
+                    if (newProjectName.trim() && !loading) {
                       e.target.style.backgroundColor = '#2563eb'
                     }
                   }}
                 >
-                  Create Project
+                  {loading ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </form>
@@ -612,11 +748,14 @@ meter = AgentMeter(
   )
 }
 
-
 export default withRouter(
   connect(
     state => ({
-
+      projects: state.project.projects || [],
+      currentProject: state.project.currentProject,
+      meterEvents: state.project.meterEvents || [],
+      loading: state.project.loading,
+      error: state.project.error
     }),
     dispatch => ({
       actions: bindActionCreators({

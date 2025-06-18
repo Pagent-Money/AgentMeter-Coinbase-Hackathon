@@ -14,6 +14,8 @@
     "client": "cross-env NODE_ENV=production http-server static",
     "server": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/app.js",
     "seed": "node scripts/seed-database.js",
+    "init-db": "node scripts/init-database.js",
+    "setup": "npm run init-db && npm run seed",
     "service:dev": "cross-env NODE_ENV=production nodemon --icu-data-dir=/usr/local/lib/node_modules/full-icu static/service.js",
     "service": "npm run build:service && npm run service:dev",
     "start": "cross-env NODE_ENV=development APP_ENV=development TARGET=browser webpack-dev-server --host 0.0.0.0"
