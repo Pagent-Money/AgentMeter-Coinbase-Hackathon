@@ -4,10 +4,14 @@ import { createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
+import { bindActionCreators } from 'redux'
+import { connect } from 'react-redux'
+import { withRouter } from 'utils/withRouter'
+import * as projectActions from 'actions/project'
 import classNames from 'classnames'
 import styles from './style.css'
 
-const Dashboard = () => {
+const Dashboard = ({ actions }) => {
   const [activeTab, setActiveTab] = useState('projects')
   const [selectedProject, setSelectedProject] = useState('proj_123abc')
 
@@ -22,6 +26,10 @@ const Dashboard = () => {
     { id: 2, agent_id: 'content-gen-v2', user_id: 'user_456', tokens_in: 320, tokens_out: 180, api_calls: 1, timestamp: '2024-02-15 14:25:15', request_cost: 0.001, token_cost: 0.012, total_cost: 0.013 },
     { id: 3, agent_id: 'assistant-v1', user_id: 'user_789', tokens_in: 89, tokens_out: 45, api_calls: 1, timestamp: '2024-02-15 14:20:08', request_cost: 0.001, token_cost: 0.003, total_cost: 0.004 }
   ]
+
+  const createProject = useCallback(() => {
+    actions.createProject({ name: 'p1' })
+  }, [])
 
   return (
     <Fragment>
@@ -72,7 +80,7 @@ const Dashboard = () => {
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>Your Projects</h3>
-                    <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>+ New Project</button>
+                    <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={createProject}>+ New Project</button>
                   </div>
 
                   {projects.map(project => (
@@ -450,4 +458,16 @@ meter = AgentMeter(
   )
 }
 
-export default Dashboard
+
+export default withRouter(
+  connect(
+    state => ({
+
+    }),
+    dispatch => ({
+      actions: bindActionCreators({
+        ...projectActions
+      }, dispatch)
+    })
+  )(Dashboard)
+)
