@@ -5,7 +5,7 @@ import { connect } from 'react-redux'
 import { withRouter } from 'utils/withRouter'
 import classNames from 'classnames'
 // import { CdpClient } from '@coinbase/cdp-sdk'
-import { createWalletClient, custom } from 'viem'
+import { createWalletClient, custom, createPublicClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
@@ -98,18 +98,46 @@ const Chat = ({ actions }) => {
 
   const getWalletBalance = useCallback(async (address) => {
     try {
-      const response = await fetch(`https://sepolia.base.org/api/v2/addresses/${address}`)
-      const data = await response.json()
-      const balance = data.coin_balance || '0'
+      console.log('Getting balance for address:', address)
+      console.log('Wallet client:', walletClient)
+
+      // Try using wallet client first
+      if (walletClient) {
+        try {
+          console.log('Attempting to get balance with wallet client...')
+          const balance = await walletClient.getBalance({ address })
+          console.log('Raw balance:', balance)
+          const balanceInEth = (parseInt(balance) / Math.pow(10, 18)).toFixed(4)
+          console.log('Balance in ETH:', balanceInEth)
+          setWalletBalance(balanceInEth)
+          return balanceInEth
+        } catch (walletError) {
+          console.error('Wallet client balance fetch failed:', walletError)
+          throw walletError // Re-throw to try fallback
+        }
+      }
+
+      // Fallback: use public client
+      console.log('Using public client fallback...')
+      const publicClient = createPublicClient({
+        chain: baseSepolia,
+        transport: http('https://sepolia.base.org')
+      })
+
+      const balance = await publicClient.getBalance({ address })
+      console.log('Raw balance from public client:', balance)
       const balanceInEth = (parseInt(balance) / Math.pow(10, 18)).toFixed(4)
+      console.log('Balance in ETH from public client:', balanceInEth)
       setWalletBalance(balanceInEth)
       return balanceInEth
+
     } catch (error) {
       console.error('Error fetching wallet balance:', error)
+      console.error('Error details:', error.message)
       setWalletBalance('N/A')
       return 'N/A'
     }
-  }, [])
+  }, [walletClient])
 
   const refreshBalance = useCallback(async () => {
     if (walletAddress) {
