@@ -7,10 +7,18 @@ import cors from 'cors'
 import { MongoClient } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { authenticateProject, rateLimit } from './middleware/auth.js'
+import OpenAI from 'openai'
 
 const port = 4021
 const app = new Express()
 const payTo = '0x08Cd4C79fd197640c004e5aEd98Bb0b3a121bEe5'
+
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: `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`, // process.env.OPENAI_API_KEY
+  timeout: 30000, // 30 second timeout
+  maxRetries: 3
+})
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/agentmeter'
@@ -41,7 +49,7 @@ app.use(
   paymentMiddleware(
     payTo,
     {
-      'GET /chat': {
+      'POST /chat': {
         price: '$0.001',
         network: 'base-sepolia'
       }
@@ -60,14 +68,14 @@ app.post('/api/project/create', async (req, res) => {
     }
 
     const { name, description, settings } = req.body
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Project name is required' })
     }
 
     const projectId = `proj_${uuidv4().replace(/-/g, '').substring(0, 8)}`
     const secretKey = `sk_live_${uuidv4().replace(/-/g, '')}`
-    
+
     const project = {
       id: projectId,
       name,
@@ -111,7 +119,7 @@ app.get('/api/project/load', async (req, res) => {
     }
 
     const { id } = req.query
-    
+
     if (!id) {
       return res.status(400).json({ error: 'Project ID is required' })
     }
@@ -322,13 +330,122 @@ app.get('/api/meter/events', async (req, res) => {
   }
 })
 
-app.get('/chat', (req, res) => {
-  res.send({
-    report: {
-      chat: 'sunny',
-      temperature: 70
-    }
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    mongodb: db ? 'connected' : 'disconnected'
   })
+})
+
+app.post('/chat', async (req, res) => {
+  try {
+    const { messages, model = 'gpt-3.5-turbo', max_tokens = 1000, temperature = 0.7 } = req.body
+
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({
+        error: 'Messages array is required and must not be empty'
+      })
+    }
+
+    console.log('/chat', messages)
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model,
+      messages,
+      max_tokens,
+      temperature
+    })
+
+    const response = completion.choices[0]?.message?.content
+    const usage = completion.usage
+
+    if (!response) {
+      return res.status(500).json({
+        error: 'No response received from OpenAI'
+      })
+    }
+
+    // Record metering event if project context is available
+    if (req.project) {
+      try {
+        const event = {
+          project_id: req.project.id,
+          agent_id: 'chat-api',
+          user_id: req.headers['x-user-id'] || 'anonymous',
+          tokens_in: usage?.prompt_tokens || 0,
+          tokens_out: usage?.completion_tokens || 0,
+          api_calls: 1,
+          timestamp: new Date(),
+          request_cost: 0,
+          token_cost: 0,
+          total_cost: 0
+        }
+
+        // Use project settings for pricing
+        const settings = req.project.settings || {
+          requestPricing: 0.001,
+          inputTokenPricing: 0.002,
+          outputTokenPricing: 0.004
+        }
+
+        event.request_cost = settings.requestPricing * event.api_calls
+        event.token_cost = (settings.inputTokenPricing * event.tokens_in / 1000) +
+                          (settings.outputTokenPricing * event.tokens_out / 1000)
+        event.total_cost = event.request_cost + event.token_cost
+
+        const eventsCollection = db.collection("meter_events")
+        await eventsCollection.insertOne(event)
+      } catch (meterError) {
+        console.error('Error recording meter event:', meterError)
+        // Don't fail the request if metering fails
+      }
+    }
+
+    res.json({
+      success: true,
+      response,
+      usage: {
+        prompt_tokens: usage?.prompt_tokens,
+        completion_tokens: usage?.completion_tokens,
+        total_tokens: usage?.total_tokens
+      }
+    })
+
+  } catch (error) {
+    console.error('Error in chat API:', error)
+
+    if (error.status === 401) {
+      return res.status(401).json({
+        error: 'OpenAI API key is invalid or missing'
+      })
+    }
+
+    if (error.status === 429) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded for OpenAI API'
+      })
+    }
+
+    // Handle timeout and connection errors
+    if (error.type === 'APIConnectionTimeoutError' || error.code === 'TIMEOUT') {
+      return res.status(408).json({
+        error: 'Request timed out. Please try again in a moment.'
+      })
+    }
+
+    if (error.type === 'APIConnectionError' || error.code === 'NETWORK_ERROR') {
+      return res.status(503).json({
+        error: 'Unable to connect to OpenAI API. Please check your internet connection and try again.'
+      })
+    }
+
+    res.status(500).json({
+      error: 'Failed to process chat request',
+      details: error.message
+    })
+  }
 })
 
 app.listen(port, () => {

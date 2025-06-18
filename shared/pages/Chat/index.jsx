@@ -102,25 +102,6 @@ const Chat = ({ actions }) => {
           timestamp: new Date().toLocaleTimeString()
         }
         setMessages(prev => [...prev, connectionMessage])
-
-        // Test payment flow
-        const fetchWithPayment = wrapFetchWithPayment(fetch, client)
-        console.log('Testing payment flow with custom account object...')
-        try {
-          const response = await fetchWithPayment(`${API_URL}/chat`, {
-            method: "GET",
-          })
-          console.log('Payment test response status:', response.status)
-          if (response.status === 402) {
-            const paymentData = await response.json()
-            console.log('Payment test - payment required:', paymentData)
-          } else {
-            const body = await response.json()
-            console.log('Payment test - success:', body)
-          }
-        } catch (error) {
-          console.log('Payment test - error:', error.message)
-        }
       }
     } catch (error) {
       console.error('Error connecting wallet:', error)
@@ -378,8 +359,22 @@ const Chat = ({ actions }) => {
     try {
       const fetchWithPayment = wrapFetchWithPayment(fetch, walletClient)
 
+      // Prepare messages for OpenAI API
+      const messages = [
+        { role: 'user', content: userMessage.content }
+      ]
+
       const response = await fetchWithPayment(`${API_URL}/chat`, {
-        method: "GET",
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages,
+          model: selectedModel,
+          max_tokens: 1000,
+          temperature: 0.7
+        })
       })
 
       if (response.status === 402) {
@@ -402,15 +397,16 @@ const Chat = ({ actions }) => {
         const aiResponse = {
           id: Date.now() + 1,
           type: 'assistant',
-          content: `API Response: ${JSON.stringify(body)}`,
+          content: body.response || 'No response received',
           timestamp: new Date().toLocaleTimeString()
         }
         setMessages(prev => [...prev, aiResponse])
       } else {
+        const errorBody = await response.json().catch(() => ({ error: 'Unknown error' }))
         const errorMessage = {
           id: Date.now() + 1,
           type: 'assistant',
-          content: `API Error: ${response.status} ${response.statusText}`,
+          content: `API Error: ${errorBody.error || response.statusText}`,
           timestamp: new Date().toLocaleTimeString()
         }
         setMessages(prev => [...prev, errorMessage])
@@ -427,7 +423,7 @@ const Chat = ({ actions }) => {
     } finally {
       setIsLoading(false)
     }
-  }, [inputValue, isLoading, isWalletConnected, walletClient])
+  }, [inputValue, isLoading, isWalletConnected, walletClient, selectedModel])
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
