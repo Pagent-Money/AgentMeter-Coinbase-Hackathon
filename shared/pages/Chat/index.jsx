@@ -9,6 +9,7 @@ import { createWalletClient, custom, createPublicClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
+import { API_URL } from 'constants/env'
 import styles from './style.css'
 
 const Chat = ({ actions }) => {
@@ -165,6 +166,22 @@ const Chat = ({ actions }) => {
 
             // Get wallet balance
             getWalletBalance(accounts[0])
+
+
+            const fetchWithPayment = wrapFetchWithPayment(fetch, client)
+
+            console.log('api url', API_URL)
+            fetchWithPayment(`${API_URL}/weather`, {
+              method: "GET",
+            }).then(async response => {
+              const body = await response.json()
+              console.log(body)
+
+              const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
+              console.log(paymentResponse)
+            }).catch(error => {
+              console.log(error.message)
+            })
           }
         } catch (error) {
           console.error('Error auto-connecting wallet:', error)
