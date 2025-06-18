@@ -14,6 +14,8 @@ import styles from './style.css'
 const Dashboard = ({ actions }) => {
   const [activeTab, setActiveTab] = useState('projects')
   const [selectedProject, setSelectedProject] = useState('proj_123abc')
+  const [showModal, setShowModal] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
 
   const projects = [
     { id: 'proj_123abc', name: 'AI Assistant Bot', created: '2024-01-15', status: 'Active' },
@@ -27,9 +29,31 @@ const Dashboard = ({ actions }) => {
     { id: 3, agent_id: 'assistant-v1', user_id: 'user_789', tokens_in: 89, tokens_out: 45, api_calls: 1, timestamp: '2024-02-15 14:20:08', request_cost: 0.001, token_cost: 0.003, total_cost: 0.004 }
   ]
 
-  const createProject = useCallback(() => {
-    actions.createProject({ name: 'p1' })
+  const openModal = useCallback(() => {
+    setShowModal(true)
+    setNewProjectName('')
   }, [])
+
+  const closeModal = useCallback(() => {
+    setShowModal(false)
+    setNewProjectName('')
+  }, [])
+
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault()
+    if (newProjectName.trim()) {
+      actions.createProject({ name: newProjectName.trim() })
+      closeModal()
+    }
+  }, [newProjectName, actions, closeModal])
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter') {
+      handleSubmit(e)
+    } else if (e.key === 'Escape') {
+      closeModal()
+    }
+  }, [handleSubmit, closeModal])
 
   return (
     <Fragment>
@@ -80,7 +104,7 @@ const Dashboard = ({ actions }) => {
                 <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1f2937' }}>Your Projects</h3>
-                    <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={createProject}>+ New Project</button>
+                    <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={openModal}>+ New Project</button>
                   </div>
 
                   {projects.map(project => (
@@ -454,6 +478,136 @@ meter = AgentMeter(
           )}
         </div>
       </div>
+
+      {/* New Project Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#1f2937', margin: 0 }}>Create New Project</h2>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: '#6b7280',
+                  padding: '0.25rem',
+                  borderRadius: '4px',
+                  transition: 'color 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.color = '#374151'}
+                onMouseLeave={(e) => e.target.style.color = '#6b7280'}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Enter project name..."
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                  onBlur={(e) => e.target.style.borderColor = '#d1d5db'}
+                  autoFocus
+                />
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+                  Choose a descriptive name for your project. This will help you identify it in your dashboard.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    background: 'white',
+                    color: '#374151',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#f9fafb'
+                    e.target.style.borderColor = '#9ca3af'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'white'
+                    e.target.style.borderColor = '#d1d5db'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newProjectName.trim()}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: newProjectName.trim() ? '#2563eb' : '#9ca3af',
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    cursor: newProjectName.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (newProjectName.trim()) {
+                      e.target.style.backgroundColor = '#1d4ed8'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (newProjectName.trim()) {
+                      e.target.style.backgroundColor = '#2563eb'
+                    }
+                  }}
+                >
+                  Create Project
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </Fragment>
   )
 }
