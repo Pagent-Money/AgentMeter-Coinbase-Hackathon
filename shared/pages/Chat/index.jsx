@@ -57,36 +57,11 @@ const Chat = ({ actions }) => {
       const [address] = await client.requestAddresses()
 
       if (address) {
-        // Create a proper account object that implements all required methods
-        const account = {
-          address: address,
-          type: 'json-rpc',
-          sign: async (message) => {
-            return await client.signMessage({ message, account: address })
-          },
-          signMessage: async (message) => {
-            return await client.signMessage({ message, account: address })
-          },
-          signTypedData: async (typedData) => {
-            return await client.signTypedData({ ...typedData, account: address })
-          },
-          signTransaction: async (transaction) => {
-            return await client.signTransaction({ ...transaction, account: address })
-          }
-        }
-
-        // Create a new wallet client with the account
-        const clientWithAccount = createWalletClient({
-          account: account,
-          chain: baseSepolia,
-          transport: custom(window.ethereum)
-        })
-
         setWalletAddress(address)
-        setWalletClient(clientWithAccount)
+        setWalletClient(client)
         setIsWalletConnected(true)
         console.log('Wallet connected:', address)
-        console.log('Wallet client with account:', clientWithAccount)
+        console.log('Wallet client:', client)
 
         // Get wallet balance
         const balance = await getWalletBalance(address)
@@ -99,6 +74,25 @@ const Chat = ({ actions }) => {
           timestamp: new Date().toLocaleTimeString()
         }
         setMessages(prev => [...prev, connectionMessage])
+
+        // Test payment flow
+        const fetchWithPayment = wrapFetchWithPayment(fetch, client)
+        console.log('Testing payment flow with simplified wallet client...')
+        try {
+          const response = await fetchWithPayment(`${API_URL}/chat`, {
+            method: "GET",
+          })
+          console.log('Payment test response status:', response.status)
+          if (response.status === 402) {
+            const paymentData = await response.json()
+            console.log('Payment test - payment required:', paymentData)
+          } else {
+            const body = await response.json()
+            console.log('Payment test - success:', body)
+          }
+        } catch (error) {
+          console.log('Payment test - error:', error.message)
+        }
       }
     } catch (error) {
       console.error('Error connecting wallet:', error)
@@ -128,24 +122,8 @@ const Chat = ({ actions }) => {
       console.log('Getting balance for address:', address)
       console.log('Wallet client:', walletClient)
 
-      // Try using wallet client first
-      if (walletClient) {
-        try {
-          console.log('Attempting to get balance with wallet client...')
-          const balance = await walletClient.getBalance({ address })
-          console.log('Raw balance:', balance)
-          const balanceInEth = (parseInt(balance) / Math.pow(10, 18)).toFixed(4)
-          console.log('Balance in ETH:', balanceInEth)
-          setWalletBalance(balanceInEth)
-          return balanceInEth
-        } catch (walletError) {
-          console.error('Wallet client balance fetch failed:', walletError)
-          throw walletError // Re-throw to try fallback
-        }
-      }
-
-      // Fallback: use public client
-      console.log('Using public client fallback...')
+      // Always use public client for getting balance
+      console.log('Using public client for balance...')
       const publicClient = createPublicClient({
         chain: baseSepolia,
         transport: http('https://sepolia.base.org')
@@ -182,18 +160,39 @@ const Chat = ({ actions }) => {
       console.log('Testing wallet connection...')
       console.log('Wallet client:', walletClient)
       console.log('Wallet client account:', walletClient.account)
+      console.log('Available methods on wallet client:', Object.getOwnPropertyNames(Object.getPrototypeOf(walletClient)))
+      console.log('Available properties on wallet client:', Object.keys(walletClient))
 
       // Test getting the current account
-      const [address] = await walletClient.requestAddresses()
+      let address
+      if (walletClient.requestAddresses) {
+        const [addr] = await walletClient.requestAddresses()
+        address = addr
+      } else if (walletClient.account && walletClient.account.address) {
+        address = walletClient.account.address
+      } else {
+        throw new Error('Cannot get wallet address')
+      }
       console.log('Current address:', address)
 
       // Test getting the chain ID
-      const chainId = await walletClient.getChainId()
+      let chainId
+      if (walletClient.getChainId) {
+        chainId = await walletClient.getChainId()
+      } else if (walletClient.chain) {
+        chainId = walletClient.chain.id
+      } else {
+        throw new Error('Cannot get chain ID')
+      }
       console.log('Chain ID:', chainId)
       console.log('Expected chain ID for base-sepolia:', baseSepolia.id)
 
-      // Test getting balance
-      const balance = await walletClient.getBalance({ address })
+      // Test getting balance using public client
+      const publicClient = createPublicClient({
+        chain: baseSepolia,
+        transport: http('https://sepolia.base.org')
+      })
+      const balance = await publicClient.getBalance({ address })
       console.log('Balance:', balance)
 
       // Test if account is properly set up for x402
@@ -233,119 +232,44 @@ const Chat = ({ actions }) => {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' })
           if (accounts.length > 0) {
-            // Create wallet client first
+            // Create wallet client
             const client = createWalletClient({
               chain: baseSepolia,
               transport: custom(window.ethereum)
             })
 
-            // Create a proper account object that implements all required methods
-            const account = {
-              address: accounts[0],
-              type: 'json-rpc',
-              sign: async (message) => {
-                return await client.signMessage({ message, account: accounts[0] })
-              },
-              signMessage: async (message) => {
-                return await client.signMessage({ message, account: accounts[0] })
-              },
-              signTypedData: async (typedData) => {
-                return await client.signTypedData({ ...typedData, account: accounts[0] })
-              },
-              signTransaction: async (transaction) => {
-                return await client.signTransaction({ ...transaction, account: accounts[0] })
-              }
-            }
-
-            // Create a new wallet client with the account
-            const clientWithAccount = createWalletClient({
-              account: account,
-              chain: baseSepolia,
-              transport: custom(window.ethereum)
-            })
-
             setWalletAddress(accounts[0])
-            setWalletClient(clientWithAccount)
+            setWalletClient(client)
             setIsWalletConnected(true)
             console.log('Auto-connected to wallet:', accounts[0])
-            console.log('Wallet client with account:', clientWithAccount)
+            console.log('Wallet client:', client)
 
             // Get wallet balance
             getWalletBalance(accounts[0])
 
-            /* const fetchWithPayment = wrapFetchWithPayment(fetch, clientWithAccount)
-
-             * console.log('api url', API_URL)
-             * console.log('Making API call with payment...')
-             * fetchWithPayment(`${API_URL}/chat`, {
-             *   method: "GET",
-             * }).then(async response => {
-             *   console.log('Response status:', response.status)
-             *   console.log('Response headers:', Object.fromEntries(response.headers.entries()))
-
-             *   if (response.status === 402) {
-             *     // Payment required - this is expected behavior
-             *     const paymentData = await response.json()
-             *     console.log('Payment required:', paymentData)
-
-             *     // Add payment message to chat
-             *     const paymentMessage = {
-             *       id: Date.now(),
-             *       type: 'assistant',
-             *       content: `Payment required to access chat API. Cost: $0.001. Please complete the payment to continue.`,
-             *       timestamp: new Date().toLocaleTimeString()
-             *     }
-             *     setMessages(prev => [...prev, paymentMessage])
-
-             *     // You can show a payment modal or handle payment here
-             *     // For now, we'll just log the payment instructions
-             *     console.log('Payment instructions:', paymentData)
-             *   } else {
-             *     const body = await response.json()
-             *     console.log('Success response body:', body)
-
-             *     const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
-             *     console.log('Payment response:', paymentResponse)
-
-             *     // Add successful response to chat
-             *     const successMessage = {
-             *       id: Date.now(),
-             *       type: 'assistant',
-             *       content: `API call successful! Response: ${JSON.stringify(body)}`,
-             *       timestamp: new Date().toLocaleTimeString()
-             *     }
-             *     setMessages(prev => [...prev, successMessage])
-             *   }
-             * }).catch(error => {
-             *   console.log('Error:', error.message)
-             *   console.log('Error details:', error)
-
-             *   // Add error message to chat
-             *   const errorMessage = {
-             *     id: Date.now(),
-             *     type: 'assistant',
-             *     content: `Error making API call: ${error.message}`,
-             *     timestamp: new Date().toLocaleTimeString()
-             *   }
-             *   setMessages(prev => [...prev, errorMessage])
-             * }) */
+            // Test payment flow
+            const fetchWithPayment = wrapFetchWithPayment(fetch, client)
+            console.log('Testing payment flow with simplified wallet client...')
+            try {
+              const response = await fetchWithPayment(`${API_URL}/chat`, {
+                method: "GET",
+              })
+              console.log('Payment test response status:', response.status)
+              if (response.status === 402) {
+                const paymentData = await response.json()
+                console.log('Payment test - payment required:', paymentData)
+              } else {
+                const body = await response.json()
+                console.log('Payment test - success:', body)
+              }
+            } catch (error) {
+              console.log('Payment test - error:', error.message)
+            }
           }
         } catch (error) {
           console.error('Error auto-connecting wallet:', error)
         }
       }
-
-      /* const fetchWithPayment = wrapFetchWithPayment(fetch, account)
-
-       * fetchWithPayment(`http://localhost:4021/weather`, { method: 'GET' }).then(async response => {
-       *   const body = await response.json()
-       *   console.log(body)
-
-       *   const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
-       *   console.log(paymentResponse)
-       * }).catch(error => {
-       *   console.log('error', error.message)
-       * }) */
     }
 
     connect()
@@ -539,8 +463,8 @@ const Chat = ({ actions }) => {
                       alert('❌ Wallet client not available. Please connect your wallet.')
                       return
                     }
-
-                    if (!walletClient.account || !walletClient.account.address) {
+                    
+                    if (!walletClient.chain || !walletClient.transport) {
                       alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
                       return
                     }
