@@ -4,6 +4,11 @@ import { bindActionCreators } from 'redux'
 import { connect } from 'react-redux'
 import { withRouter } from 'utils/withRouter'
 import classNames from 'classnames'
+// import { CdpClient } from '@coinbase/cdp-sdk'
+import { createWalletClient, custom } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { baseSepolia } from 'viem/chains'
+import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
 import styles from './style.css'
 
 const Chat = ({ actions }) => {
@@ -18,6 +23,10 @@ const Chat = ({ actions }) => {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedModel, setSelectedModel] = useState('gpt-4')
+  const [walletAddress, setWalletAddress] = useState('')
+  const [isWalletConnected, setIsWalletConnected] = useState(false)
+  const [walletClient, setWalletClient] = useState(null)
+  const [walletBalance, setWalletBalance] = useState('')
   const messagesEndRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -27,6 +36,169 @@ const Chat = ({ actions }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  const connectWallet = useCallback(async () => {
+    try {
+      // Check if MetaMask is installed
+      if (typeof window.ethereum === 'undefined') {
+        console.error('MetaMask is not installed')
+        alert('Please install MetaMask to use this feature')
+        return
+      }
+
+      // Create wallet client
+      const client = createWalletClient({
+        chain: baseSepolia,
+        transport: custom(window.ethereum)
+      })
+
+      // Request account access
+      const [address] = await client.requestAddresses()
+
+      if (address) {
+        setWalletAddress(address)
+        setWalletClient(client)
+        setIsWalletConnected(true)
+        console.log('Wallet connected:', address)
+
+        // Get wallet balance
+        const balance = await getWalletBalance(address)
+
+        // Add connection message to chat
+        const connectionMessage = {
+          id: Date.now(),
+          type: 'assistant',
+          content: `Wallet connected successfully! Address: ${address.slice(0, 6)}...${address.slice(-4)} | Balance: ${balance} ETH`,
+          timestamp: new Date().toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, connectionMessage])
+      }
+    } catch (error) {
+      console.error('Error connecting wallet:', error)
+      alert('Failed to connect wallet: ' + error.message)
+    }
+  }, [])
+
+  const disconnectWallet = useCallback(() => {
+    setWalletAddress('')
+    setWalletClient(null)
+    setIsWalletConnected(false)
+    setWalletBalance('')
+    console.log('Wallet disconnected')
+
+    // Add disconnection message to chat
+    const disconnectionMessage = {
+      id: Date.now(),
+      type: 'assistant',
+      content: 'Wallet disconnected successfully.',
+      timestamp: new Date().toLocaleTimeString()
+    }
+    setMessages(prev => [...prev, disconnectionMessage])
+  }, [])
+
+  const getWalletBalance = useCallback(async (address) => {
+    try {
+      const response = await fetch(`https://sepolia.base.org/api/v2/addresses/${address}`)
+      const data = await response.json()
+      const balance = data.coin_balance || '0'
+      const balanceInEth = (parseInt(balance) / Math.pow(10, 18)).toFixed(4)
+      setWalletBalance(balanceInEth)
+      return balanceInEth
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error)
+      setWalletBalance('N/A')
+      return 'N/A'
+    }
+  }, [])
+
+  const refreshBalance = useCallback(async () => {
+    if (walletAddress) {
+      await getWalletBalance(walletAddress)
+    }
+  }, [walletAddress, getWalletBalance])
+
+  useEffect(() => {
+    const connect = async () => {
+      console.log('connect')
+
+      // Auto-connect if wallet was previously connected
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+          if (accounts.length > 0) {
+            const client = createWalletClient({
+              chain: baseSepolia,
+              transport: custom(window.ethereum)
+            })
+            setWalletAddress(accounts[0])
+            setWalletClient(client)
+            setIsWalletConnected(true)
+            console.log('Auto-connected to wallet:', accounts[0])
+
+            // Get wallet balance
+            getWalletBalance(accounts[0])
+          }
+        } catch (error) {
+          console.error('Error auto-connecting wallet:', error)
+        }
+      }
+
+      /* const fetchWithPayment = wrapFetchWithPayment(fetch, account)
+
+       * fetchWithPayment(`http://localhost:4021/weather`, { method: 'GET' }).then(async response => {
+       *   const body = await response.json()
+       *   console.log(body)
+
+       *   const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
+       *   console.log(paymentResponse)
+       * }).catch(error => {
+       *   console.log('error', error.message)
+       * }) */
+    }
+
+    connect()
+  }, [])
+
+  // Listen for wallet account changes
+  useEffect(() => {
+    if (typeof window.ethereum !== 'undefined') {
+      const handleAccountsChanged = async (accounts) => {
+        if (accounts.length === 0) {
+          // User disconnected their wallet
+          disconnectWallet()
+        } else if (accounts[0] !== walletAddress) {
+          // User switched accounts
+          setWalletAddress(accounts[0])
+          console.log('Wallet account changed:', accounts[0])
+
+          // Get new wallet balance
+          const balance = await getWalletBalance(accounts[0])
+
+          // Add account change message to chat
+          const accountChangeMessage = {
+            id: Date.now(),
+            type: 'assistant',
+            content: `Wallet account changed to: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)} | Balance: ${balance} ETH`,
+            timestamp: new Date().toLocaleTimeString()
+          }
+          setMessages(prev => [...prev, accountChangeMessage])
+        }
+      }
+
+      const handleChainChanged = (chainId) => {
+        // Reload the page when chain changes
+        window.location.reload()
+      }
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged)
+      window.ethereum.on('chainChanged', handleChainChanged)
+
+      return () => {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+        window.ethereum.removeListener('chainChanged', handleChainChanged)
+      }
+    }
+  }, [walletAddress, disconnectWallet])
 
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading) return
@@ -84,8 +256,34 @@ const Chat = ({ actions }) => {
               <p className={styles.subtitle}>Powered by AgentMeter</p>
             </div>
             <div className={styles.headerRight}>
-              <select 
-                value={selectedModel} 
+              {/* Wallet Connection */}
+              <div className={styles.walletSection}>
+                {isWalletConnected ? (
+                  <div className={styles.walletInfo}>
+                    <span className={styles.walletAddress}>
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </span>
+                    {walletBalance && (
+                      <span className={styles.walletBalance}>
+                        {walletBalance} ETH
+                        <button onClick={refreshBalance} className={styles.refreshButton} title="Refresh balance">
+                          🔄
+                        </button>
+                      </span>
+                    )}
+                    <button onClick={disconnectWallet} className={styles.disconnectButton}>
+                      🔌 Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={connectWallet} className={styles.connectButton}>
+                    🔗 Connect Wallet
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className={styles.modelSelect}
               >
@@ -103,8 +301,8 @@ const Chat = ({ actions }) => {
           <div className={styles.messagesContainer}>
             <div className={styles.messages}>
               {messages.map((message) => (
-                <div 
-                  key={message.id} 
+                <div
+                  key={message.id}
                   className={classNames(
                     styles.message,
                     message.type === 'user' ? styles.userMessage : styles.assistantMessage
@@ -123,7 +321,7 @@ const Chat = ({ actions }) => {
                   </div>
                 </div>
               ))}
-              
+
               {isLoading && (
                 <div className={classNames(styles.message, styles.assistantMessage)}>
                   <div className={styles.messageContent}>
@@ -139,7 +337,7 @@ const Chat = ({ actions }) => {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -156,7 +354,7 @@ const Chat = ({ actions }) => {
                 rows={1}
                 disabled={isLoading}
               />
-              <button 
+              <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isLoading}
                 className={classNames(styles.sendButton, {
@@ -192,4 +390,4 @@ export default withRouter(
       }, dispatch)
     })
   )(Chat)
-) 
+)
