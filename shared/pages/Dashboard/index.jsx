@@ -52,7 +52,7 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
     if (newProjectName.trim()) {
-      actions.createProject({ 
+      actions.createProject({
         name: newProjectName.trim(),
         description: newProjectDescription.trim()
       })
@@ -92,13 +92,13 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
 
           {/* Error Display */}
           {error && (
-            <div style={{ 
-              backgroundColor: '#fef2f2', 
-              border: '1px solid #fecaca', 
-              color: '#dc2626', 
-              padding: '1rem', 
-              borderRadius: '6px', 
-              marginBottom: '1rem' 
+            <div style={{
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#dc2626',
+              padding: '1rem',
+              borderRadius: '6px',
+              marginBottom: '1rem'
             }}>
               Error: {error}
             </div>
@@ -145,7 +145,7 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
                     <button className={styles.button} style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={openModal}>+ New Project</button>
                   </div>
 
-                  {loading ? (
+                  {(loading && projects.length === 0) ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading projects...</div>
                   ) : projects.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
@@ -228,7 +228,7 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
                               fontFamily: 'monospace'
                             }}
                           />
-                          <button 
+                          <button
                             onClick={() => navigator.clipboard.writeText(selectedProjectData.id)}
                             style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
                           >
@@ -254,7 +254,7 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
                             }}
                           />
                           <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>👁️</button>
-                          <button 
+                          <button
                             onClick={() => navigator.clipboard.writeText(selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890')}
                             style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
                           >
@@ -333,7 +333,7 @@ meter = AgentMeter(
                       acc[event.agent_id] += event.api_calls
                       return acc
                     }, {})
-                    
+
                     return Object.entries(agentStats)
                       .sort(([,a], [,b]) => b - a)
                       .slice(0, 3)
