@@ -273,62 +273,62 @@ const Chat = ({ actions }) => {
             // Get wallet balance
             getWalletBalance(accounts[0])
 
-            const fetchWithPayment = wrapFetchWithPayment(fetch, clientWithAccount)
+            /* const fetchWithPayment = wrapFetchWithPayment(fetch, clientWithAccount)
 
-            console.log('api url', API_URL)
-            console.log('Making API call with payment...')
-            fetchWithPayment(`${API_URL}/chat`, {
-              method: "GET",
-            }).then(async response => {
-              console.log('Response status:', response.status)
-              console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+             * console.log('api url', API_URL)
+             * console.log('Making API call with payment...')
+             * fetchWithPayment(`${API_URL}/chat`, {
+             *   method: "GET",
+             * }).then(async response => {
+             *   console.log('Response status:', response.status)
+             *   console.log('Response headers:', Object.fromEntries(response.headers.entries()))
 
-              if (response.status === 402) {
-                // Payment required - this is expected behavior
-                const paymentData = await response.json()
-                console.log('Payment required:', paymentData)
+             *   if (response.status === 402) {
+             *     // Payment required - this is expected behavior
+             *     const paymentData = await response.json()
+             *     console.log('Payment required:', paymentData)
 
-                // Add payment message to chat
-                const paymentMessage = {
-                  id: Date.now(),
-                  type: 'assistant',
-                  content: `Payment required to access chat API. Cost: $0.001. Please complete the payment to continue.`,
-                  timestamp: new Date().toLocaleTimeString()
-                }
-                setMessages(prev => [...prev, paymentMessage])
+             *     // Add payment message to chat
+             *     const paymentMessage = {
+             *       id: Date.now(),
+             *       type: 'assistant',
+             *       content: `Payment required to access chat API. Cost: $0.001. Please complete the payment to continue.`,
+             *       timestamp: new Date().toLocaleTimeString()
+             *     }
+             *     setMessages(prev => [...prev, paymentMessage])
 
-                // You can show a payment modal or handle payment here
-                // For now, we'll just log the payment instructions
-                console.log('Payment instructions:', paymentData)
-              } else {
-                const body = await response.json()
-                console.log('Success response body:', body)
+             *     // You can show a payment modal or handle payment here
+             *     // For now, we'll just log the payment instructions
+             *     console.log('Payment instructions:', paymentData)
+             *   } else {
+             *     const body = await response.json()
+             *     console.log('Success response body:', body)
 
-                const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
-                console.log('Payment response:', paymentResponse)
+             *     const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
+             *     console.log('Payment response:', paymentResponse)
 
-                // Add successful response to chat
-                const successMessage = {
-                  id: Date.now(),
-                  type: 'assistant',
-                  content: `API call successful! Response: ${JSON.stringify(body)}`,
-                  timestamp: new Date().toLocaleTimeString()
-                }
-                setMessages(prev => [...prev, successMessage])
-              }
-            }).catch(error => {
-              console.log('Error:', error.message)
-              console.log('Error details:', error)
+             *     // Add successful response to chat
+             *     const successMessage = {
+             *       id: Date.now(),
+             *       type: 'assistant',
+             *       content: `API call successful! Response: ${JSON.stringify(body)}`,
+             *       timestamp: new Date().toLocaleTimeString()
+             *     }
+             *     setMessages(prev => [...prev, successMessage])
+             *   }
+             * }).catch(error => {
+             *   console.log('Error:', error.message)
+             *   console.log('Error details:', error)
 
-              // Add error message to chat
-              const errorMessage = {
-                id: Date.now(),
-                type: 'assistant',
-                content: `Error making API call: ${error.message}`,
-                timestamp: new Date().toLocaleTimeString()
-              }
-              setMessages(prev => [...prev, errorMessage])
-            })
+             *   // Add error message to chat
+             *   const errorMessage = {
+             *     id: Date.now(),
+             *     type: 'assistant',
+             *     content: `Error making API call: ${error.message}`,
+             *     timestamp: new Date().toLocaleTimeString()
+             *   }
+             *   setMessages(prev => [...prev, errorMessage])
+             * }) */
           }
         } catch (error) {
           console.error('Error auto-connecting wallet:', error)
