@@ -15,8 +15,8 @@ const Header = ({ location, actions }) => {
             AgentMeter
           </div>
           <nav className={styles.nav}>
-            <Link href="/">Home</Link>
-            <Link href="/dashboard">Dashboard</Link>
+            <Link to="/">Home</Link>
+            <Link to="/dashboard">Dashboard</Link>
             <Link href="#sdk">SDK</Link>
             <Link href="#portal">Business Portal</Link>
             <Link href="#docs">Documentation</Link>

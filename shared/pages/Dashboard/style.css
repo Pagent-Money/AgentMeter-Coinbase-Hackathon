@@ -1,0 +1,26 @@
+.dashboard {
+  minHeight: '100vh';
+  backgroundColor: '#f8fafc';
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .button {
+    display: inline-block;
+    background-color: #2563eb;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s;
+    margin: 1rem 0.5rem;
+  }
+
+  .buttonSecondary {
+    background-color: #6b7280;
+  }
+}
