@@ -19,20 +19,6 @@ app.use(
       'GET /chat': {
         price: '$0.001',
         network: 'base-sepolia'
-      },
-      '/premium/*': {
-        price: {
-          amount: '100000',
-          asset: {
-            address: '0xabc',
-            decimals: 18,
-            eip712: {
-              name: 'WETH',
-              version: '1'
-            }
-          }
-        },
-        network: 'base-sepolia'
       }
     },
     {
@@ -47,12 +33,6 @@ app.get('/chat', (req, res) => {
       chat: 'sunny',
       temperature: 70
     }
-  })
-})
-
-app.get('/premium/content', (req, res) => {
-  res.send({
-    content: 'This is premium content'
   })
 })
 

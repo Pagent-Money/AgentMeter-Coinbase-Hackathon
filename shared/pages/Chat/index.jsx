@@ -57,16 +57,21 @@ const Chat = ({ actions }) => {
       const [address] = await client.requestAddresses()
 
       if (address) {
-        // Create an account object that x402-fetch expects
+        // Create a proper account object that implements all required methods
         const account = {
           address: address,
           type: 'json-rpc',
-          // Add methods that x402-fetch might need
+          sign: async (message) => {
+            return await client.signMessage({ message, account: address })
+          },
           signMessage: async (message) => {
             return await client.signMessage({ message, account: address })
           },
           signTypedData: async (typedData) => {
             return await client.signTypedData({ ...typedData, account: address })
+          },
+          signTransaction: async (transaction) => {
+            return await client.signTransaction({ ...transaction, account: address })
           }
         }
 
@@ -204,8 +209,14 @@ const Chat = ({ actions }) => {
           alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Account not ready for x402 payments`)
         }
       } else {
-        console.log('❌ No account configured')
-        alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ No account configured for x402 payments`)
+        // Check if wallet client has the required properties for x402
+        if (walletClient.chain && walletClient.transport) {
+          console.log('✅ Wallet client has chain and transport properties')
+          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n✅ Wallet client ready for x402 payments`)
+        } else {
+          console.log('❌ Wallet client missing required properties')
+          alert(`Wallet test successful!\nAddress: ${address}\nChain ID: ${chainId}\nBalance: ${balance}\n❌ Wallet client not ready for x402 payments`)
+        }
       }
     } catch (error) {
       console.error('Wallet test failed:', error)
@@ -228,16 +239,21 @@ const Chat = ({ actions }) => {
               transport: custom(window.ethereum)
             })
 
-            // Create an account object that x402-fetch expects
+            // Create a proper account object that implements all required methods
             const account = {
               address: accounts[0],
               type: 'json-rpc',
-              // Add methods that x402-fetch might need
+              sign: async (message) => {
+                return await client.signMessage({ message, account: accounts[0] })
+              },
               signMessage: async (message) => {
                 return await client.signMessage({ message, account: accounts[0] })
               },
               signTypedData: async (typedData) => {
                 return await client.signTypedData({ ...typedData, account: accounts[0] })
+              },
+              signTransaction: async (transaction) => {
+                return await client.signTransaction({ ...transaction, account: accounts[0] })
               }
             }
 
@@ -519,17 +535,12 @@ const Chat = ({ actions }) => {
                     console.log('Wallet client:', walletClient)
                     console.log('Wallet client account:', walletClient.account)
 
-                    if (!walletClient.account) {
-                      alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
+                    if (!walletClient) {
+                      alert('❌ Wallet client not available. Please connect your wallet.')
                       return
                     }
 
-                    if (typeof walletClient.account === 'string' && !walletClient.account) {
-                      alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
-                      return
-                    }
-
-                    if (typeof walletClient.account === 'object' && !walletClient.account.address) {
+                    if (!walletClient.account || !walletClient.account.address) {
                       alert('❌ Wallet client not properly configured. Please reconnect your wallet.')
                       return
                     }
