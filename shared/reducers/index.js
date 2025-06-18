@@ -4,6 +4,7 @@ import { createRouterReducer } from '@lagunovsky/redux-react-router'
 import { reducer as form } from 'redux-form'
 import intl from './intl'
 import theme from './theme'
+import project from './project'
 
 enableMapSet()
 
@@ -12,6 +13,7 @@ const createRootReducer = (history) => combineReducers({
   form,
   intl,
   theme,
+  project
 })
 
 export default createRootReducer

@@ -4,18 +4,29 @@ import { bindActionCreators } from 'redux'
 import { Link } from 'react-router-dom'
 import { withRouter } from 'utils/withRouter'
 import classNames from 'classnames'
+import styles from './style.css'
 
 const Header = ({ location, actions }) => {
   return (
-    <div className={classNames(styles.header)}>
-      <div className={styles.main}>
-        <Link className={styles.branding} to="/">
-          <div className={styles.text}>
-
+    <header className={styles.header}>
+      <div className={styles.container}>
+        <div className={styles.headerContent}>
+          <div className={styles.logo}>
+            AgentMeter
           </div>
-        </Link>
+          <nav className={styles.nav}>
+            <Link to="/">Home</Link>
+            <Link to="/dashboard">Dashboard</Link>
+            <Link href="#sdk">SDK</Link>
+            <Link href="#portal">Business Portal</Link>
+            <Link href="#docs">Documentation</Link>
+          </nav>
+          <Link href="#portal" className={styles.ctaButton}>
+            Get Started
+          </Link>
+        </div>
       </div>
-    </div>
+    </header>
   )
 }
 

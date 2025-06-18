@@ -1,59 +1,39 @@
-import React, { useEffect, useState, useCallback, Fragment } from 'react'
-import { Link } from 'react-router-dom'
-// import { CdpClient } from '@coinbase/cdp-sdk'
-import { config } from 'dotenv'
-import { createWalletClient, http } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { baseSepolia } from 'viem/chains'
-import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
-import classNames from 'classnames'
-import styles from './style.css'
+import Head from 'next/head'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
 
-config()
-
-const Landing = () => {
-  const createWallet = useCallback(() => {
-    const start = async () => {
-      const account = privateKeyToAccount(process.env.PRIVATE_KEY)
-      console.log('createWallet', account)
-
-      const fetchWithPayment = wrapFetchWithPayment(fetch, account)
-
-      fetchWithPayment(`http://localhost:4021/weather`, { method: 'GET' }).then(async response => {
-        const body = await response.json()
-        console.log(body)
-
-        const paymentResponse = decodeXPaymentResponse(response.headers.get('x-payment-response'))
-        console.log(paymentResponse)
-      }).catch(error => {
-        console.log('error', error.message)
-      })
-    }
-
-    start()
-  }, [])
-
+export default function Home() {
   return (
-    <Fragment>
-      <div className={styles.landing}>
-        <section className={styles.banner}>
-          <div className={styles.container}>
+    <>
+      <Head>
+        <title>AgentMeter - Metering & Billing for AI Agents</title>
+        <meta name="description" content="Metering & Billing your Agents with x402 enabled stablecoin micropayment" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <Header />
+
+      <main>
+        {/* Banner Section */}
+        <section className="banner">
+          <div className="container">
             <h1>AgentMeter</h1>
             <p>Metering & Billing your Agents with x402 enabled stablecoin micropayment.</p>
           </div>
         </section>
 
         {/* Agent Meter SDK Section */}
-        <section id="sdk" className={styles.section}>
-          <div className={styles.container}>
-            <div className={styles.sectionContent}>
+        <section id="sdk" className="section">
+          <div className="container">
+            <div className="section-content">
               <h2>Agent Meter SDK</h2>
               <p>
-                Integrate AgentMeter seamlessly into your Langchain-compatible applications with our Python SDK.
+                Integrate AgentMeter seamlessly into your Langchain-compatible applications with our Python SDK. 
                 Track agent usage, monitor costs, and enable automatic billing with just a few lines of code.
               </p>
-
-              <div className={styles.codeBlock}>
+              
+              <div className="code-block">
                 <pre>{`pip install agentmeter-sdk
 
 # Initialize with your AM-Keys
@@ -69,7 +49,7 @@ meter = AgentMeter(
 with meter.track_session() as session:
     # Your Langchain agent code here
     response = agent.run("What's the weather today?")
-
+    
     # Usage automatically tracked and billed
     session.log_completion(
         tokens_used=150,
@@ -78,64 +58,64 @@ with meter.track_session() as session:
     )`}</pre>
               </div>
 
-              <div className={styles.features}>
-                <div className={styles.featureCard}>
+              <div className="features">
+                <div className="feature-card">
                   <h3>🔑 Easy Authentication</h3>
                   <p>Secure API key-based authentication with your AM-Keys from the business portal.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>📊 Automatic Tracking</h3>
                   <p>Seamlessly track token usage, API calls, and costs without manual intervention.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>🔗 Langchain Compatible</h3>
                   <p>Drop-in integration with existing Langchain workflows and agents.</p>
                 </div>
               </div>
 
               <p>
-                <strong>Get Started:</strong> Visit the AgentMeter Business Portal to obtain your AM-Keys
+                <strong>Get Started:</strong> Visit the AgentMeter Business Portal to obtain your AM-Keys 
                 and set up billing for your agents.
               </p>
-
-              <a href="#portal" className={styles.button}>Get AM-Keys →</a>
-              <a href="#" className={classNames(styles.button, styles.buttonSecondary)}>View Documentation</a>
+              
+              <a href="#portal" className="button">Get AM-Keys →</a>
+              <a href="#" className="button button-secondary">View Documentation</a>
             </div>
           </div>
         </section>
 
         {/* Business Portal Section */}
-        <section id="portal" className={styles.section}>
-          <div className={styles.container}>
-            <div className={styles.sectionContent}>
+        <section id="portal" className="section">
+          <div className="container">
+            <div className="section-content">
               <h2>AgentMeter Business Portal</h2>
               <p>
-                The comprehensive platform for agent producers to manage, monitor, and monetize their AI agents.
+                The comprehensive platform for agent producers to manage, monitor, and monetize their AI agents. 
                 Set up pricing models, track usage analytics, and automate billing with x402 micropayments.
               </p>
 
-              <div className={styles.features}>
-                <div className={styles.featureCard}>
+              <div className="features">
+                <div className="feature-card">
                   <h3>📈 Usage Analytics</h3>
                   <p>Real-time dashboards showing agent usage, performance metrics, and revenue analytics across all your registered agents.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>💰 Flexible Pricing</h3>
                   <p>Set up custom pricing models: per-token, per-request, subscription-based, or hybrid models that fit your business needs.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>🔄 Auto Billing</h3>
                   <p>Automated billing and payments using x402 protocol with stablecoin micropayments for instant, low-cost transactions.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>🛡️ Access Control</h3>
                   <p>Manage API keys, set usage limits, and control access to your agents with granular permission settings.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>🔔 Smart Alerts</h3>
                   <p>Get notified about usage spikes, billing events, API errors, and performance issues in real-time.</p>
                 </div>
-                <div className={styles.featureCard}>
+                <div className="feature-card">
                   <h3>📊 Revenue Optimization</h3>
                   <p>AI-powered insights and recommendations to optimize pricing and maximize revenue from your agents.</p>
                 </div>
@@ -143,7 +123,7 @@ with meter.track_session() as session:
 
               <div style={{ marginTop: '3rem', padding: '2rem', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
                 <h3 style={{ marginBottom: '1rem', color: '#1f2937' }}>Key Features Highlights:</h3>
-                <ul style={{ textAlign: 'left', maxWidth: '600px', color: '#1f2937', margin: '0 auto' }}>
+                <ul style={{ textAlign: 'left', maxWidth: '600px', margin: '0 auto' }}>
                   <li>✅ Multi-agent management dashboard</li>
                   <li>✅ Real-time usage monitoring and cost tracking</li>
                   <li>✅ Automated x402 stablecoin micropayments</li>
@@ -156,14 +136,14 @@ with meter.track_session() as session:
               </div>
 
               <div style={{ marginTop: '2rem' }}>
-                <a href="#" className={styles.button} style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>
+                <a href="#" className="button" style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>
                   Login to Portal
                 </a>
-                <a href="#" className={classNames(styles.button, styles.buttonSecondary)} style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>
+                <a href="#" className="button button-secondary" style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>
                   Create Account
                 </a>
               </div>
-
+              
               <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', color: '#6b7280' }}>
                 New to AgentMeter? Start with our free tier that includes up to 10,000 API calls per month.
               </p>
@@ -172,28 +152,28 @@ with meter.track_session() as session:
         </section>
 
         {/* Call to Action Section */}
-        <section className={styles.section} style={{ backgroundColor: '#1f2937', color: 'white' }}>
-          <div className={styles.container}>
-            <div className={styles.sectionContent}>
+        <section className="section" style={{ backgroundColor: '#1f2937', color: 'white' }}>
+          <div className="container">
+            <div className="section-content">
               <h2 style={{ color: 'white' }}>Ready to Start Metering Your Agents?</h2>
               <p style={{ color: '#d1d5db' }}>
-                Join hundreds of AI developers already using AgentMeter to monetize their agents
+                Join hundreds of AI developers already using AgentMeter to monetize their agents 
                 with transparent, automated billing.
               </p>
               <div style={{ marginTop: '2rem' }}>
-                <a href="#portal" className={styles.button} style={{ marginRight: '1rem' }}>
+                <a href="#portal" className="button" style={{ marginRight: '1rem' }}>
                   Get Started Free
                 </a>
-                <a href="#" className={classNames(styles.button, styles.buttonSecondary)}>
+                <a href="#" className="button button-secondary">
                   Schedule Demo
                 </a>
               </div>
             </div>
           </div>
         </section>
-      </div>
-    </Fragment>
-  )
-}
+      </main>
 
-export default Landing
+      <Footer />
+    </>
+  )
+} 
