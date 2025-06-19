@@ -1,73 +1,112 @@
-import { MongoClient } from 'mongodb'
+import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/agentmeter'
+// Load environment variables
+dotenv.config({ path: './service/.env' })
+
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Missing Supabase environment variables. Please check your service/.env file.')
+  console.log('Required variables: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY')
+  process.exit(1)
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+})
 
 async function initDatabase() {
-  const client = new MongoClient(MONGODB_URI)
-
   try {
-    await client.connect()
-    console.log('Connected to MongoDB')
+    console.log('🚀 Initializing AgentMeter Supabase database...')
 
-    const db = client.db("agentmeter")
+    // Test connection
+    const { data: connectionTest, error: connectionError } = await supabase
+      .from('projects')
+      .select('count')
+      .limit(1)
 
-    // Create collections if they don't exist
-    const collections = ['projects', 'meter_events']
-    
-    for (const collectionName of collections) {
+    if (connectionError) {
+      throw new Error(`Failed to connect to Supabase: ${connectionError.message}`)
+    }
+
+    console.log('✅ Connected to Supabase successfully')
+
+    // Check if tables exist by trying to query them
+    const tables = ['projects', 'metering_events', 'billing_records']
+    const tableStatus = {}
+
+    for (const table of tables) {
       try {
-        await db.createCollection(collectionName)
-        console.log(`Created collection: ${collectionName}`)
-      } catch (error) {
-        if (error.code === 48) { // Collection already exists
-          console.log(`Collection ${collectionName} already exists`)
+        const { data, error } = await supabase
+          .from(table)
+          .select('count')
+          .limit(1)
+        
+        if (error) {
+          tableStatus[table] = 'missing'
         } else {
-          console.error(`Error creating collection ${collectionName}:`, error)
+          tableStatus[table] = 'exists'
         }
+      } catch (err) {
+        tableStatus[table] = 'missing'
       }
     }
 
-    // Create indexes for better performance
-    const projectsCollection = db.collection("projects")
-    
-    try {
-      await projectsCollection.createIndex({ id: 1 }, { unique: true })
-      console.log('Created unique index on projects.id')
-    } catch (error) {
-      console.log('Index on projects.id already exists or error:', error.message)
+    console.log('\n📊 Table Status:')
+    Object.entries(tableStatus).forEach(([table, status]) => {
+      const icon = status === 'exists' ? '✅' : '❌'
+      console.log(`  ${icon} ${table}: ${status}`)
+    })
+
+    const missingTables = Object.entries(tableStatus)
+      .filter(([_, status]) => status === 'missing')
+      .map(([table, _]) => table)
+
+    if (missingTables.length > 0) {
+      console.log('\n⚠️  Some tables are missing. Please run the SQL schema in Supabase:')
+      console.log('   1. Go to your Supabase dashboard')
+      console.log('   2. Navigate to SQL Editor')
+      console.log('   3. Run the schema from: database/supabase-schema.sql')
+      console.log('\n   Missing tables:', missingTables.join(', '))
+    } else {
+      console.log('\n✅ All required tables are present')
+      
+      // Check for sample data
+      const { data: projects } = await supabase
+        .from('projects')
+        .select('count')
+        .limit(1)
+
+      const { data: events } = await supabase
+        .from('metering_events')
+        .select('count')
+        .limit(1)
+
+      console.log('\n📈 Database Stats:')
+      console.log(`  Projects: ${projects?.length || 0}`)
+      console.log(`  Metering Events: ${events?.length || 0}`)
+
+      if (!projects?.length && !events?.length) {
+        console.log('\n💡 Database is empty. Consider running: npm run seed')
+      }
     }
 
-    try {
-      await projectsCollection.createIndex({ createdAt: -1 })
-      console.log('Created index on projects.createdAt')
-    } catch (error) {
-      console.log('Index on projects.createdAt already exists or error:', error.message)
-    }
-
-    const eventsCollection = db.collection("meter_events")
-    
-    try {
-      await eventsCollection.createIndex({ project_id: 1, timestamp: -1 })
-      console.log('Created index on meter_events.project_id and timestamp')
-    } catch (error) {
-      console.log('Index on meter_events.project_id already exists or error:', error.message)
-    }
-
-    try {
-      await eventsCollection.createIndex({ agent_id: 1, timestamp: -1 })
-      console.log('Created index on meter_events.agent_id and timestamp')
-    } catch (error) {
-      console.log('Index on meter_events.agent_id already exists or error:', error.message)
-    }
-
-    console.log('Database initialization completed successfully')
+    console.log('\n🎉 Database initialization completed!')
 
   } catch (error) {
-    console.error('Failed to initialize database:', error)
-  } finally {
-    await client.close()
+    console.error('❌ Error initializing database:', error.message)
+    console.log('\n🔧 Troubleshooting:')
+    console.log('  1. Check your Supabase credentials in service/.env')
+    console.log('  2. Ensure your Supabase project is active')
+    console.log('  3. Verify RLS policies allow service role access')
+    console.log('  4. Run the SQL schema if tables are missing')
+    process.exit(1)
   }
 }
 
-// Run the initialization
 initDatabase() 
