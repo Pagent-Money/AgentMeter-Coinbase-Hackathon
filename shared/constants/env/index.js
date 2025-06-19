@@ -8,4 +8,3 @@ export const DATABASE_HOST = config.DATABASE_HOST
 export const SOCKET_URL = config.SOCKET_URL
 export const REDIS_HOST = config.REDIS_HOST
 export const OPENAI_API_KEY = config.OPENAI_API_KEY
-export const OPENAI_API_URL = config.OPENAI_API_URL
