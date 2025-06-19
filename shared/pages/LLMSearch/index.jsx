@@ -7,7 +7,7 @@ import { createWalletClient, custom, createPublicClient, http } from 'viem'
 import { baseSepolia } from 'viem/chains'
 import { wrapFetchWithPayment } from 'x402-fetch'
 import { API_URL } from 'constants/env'
-import styles from '../Chat/style.css'
+import styles from './style.css'
 
 const LLMSearch = ({ actions }) => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -151,90 +151,71 @@ const LLMSearch = ({ actions }) => {
 
   return (
     <Fragment>
-      <div className={styles.chat}>
-        <div className={styles.container}>
+      <div className={styles.llmsearchRoot}>
+        <div className={styles.llmsearchContainer}>
           {/* Header */}
-          <div className={styles.header}>
-            <div className={styles.headerLeft}>
-              <h1 className={styles.title}>LLM Search</h1>
-              <p className={styles.subtitle}>Search with Large Language Models (LLMs) - Powered by AgentMeter</p>
-            </div>
-            <div className={styles.headerRight}>
-              <div className={styles.walletSection}>
-                {isWalletConnected ? (
-                  <div className={styles.walletInfo}>
-                    <span className={styles.walletAddress}>
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+          <div className={styles.llmsearchHeader}>
+            <h1 className={styles.llmsearchTitle}>LLM Search</h1>
+            <p className={styles.llmsearchSubtitle}>Search with Large Language Models (LLMs) - Powered by AgentMeter</p>
+            <div className={styles.llmsearchWallet}>
+              {isWalletConnected ? (
+                <>
+                  <span className={styles.llmsearchWalletAddress}>
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </span>
+                  {walletBalance && (
+                    <span className={styles.llmsearchWalletBalance}>
+                      {walletBalance} ETH
+                      <button onClick={refreshBalance} className={styles.llmsearchRefreshButton} title="Refresh balance">
+                        🔄
+                      </button>
                     </span>
-                    {walletBalance && (
-                      <span className={styles.walletBalance}>
-                        {walletBalance} ETH
-                        <button onClick={refreshBalance} className={styles.refreshButton} title="Refresh balance">
-                          🔄
-                        </button>
-                      </span>
-                    )}
-                    <button onClick={disconnectWallet} className={styles.disconnectButton}>
-                      🔌 Disconnect
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={connectWallet} className={styles.connectButton}>
-                    🔗 Connect Wallet
+                  )}
+                  <button onClick={disconnectWallet} className={styles.llmsearchDisconnectButton}>
+                    Disconnect
                   </button>
-                )}
-              </div>
+                </>
+              ) : (
+                <button onClick={connectWallet} className={styles.llmsearchConnectButton}>
+                  Connect Wallet
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Search Input */}
-          <div className={styles.inputContainer}>
-            <div className={styles.inputWrapper}>
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your search query here... (Press Enter to search)"
-                className={styles.input}
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSearch}
-                disabled={!searchQuery.trim() || isLoading}
-                className={classNames(styles.sendButton, {
-                  [styles.sendButtonDisabled]: !searchQuery.trim() || isLoading
-                })}
-              >
-                {isLoading ? '⏳' : '🔍'}
-              </button>
-            </div>
+          {/* Search Bar */}
+          <div className={styles.llmsearchSearchBar}>
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your search query here... (Press Enter to search)"
+              className={styles.llmsearchInput}
+              disabled={isLoading}
+            />
+            <button
+              onClick={handleSearch}
+              disabled={!searchQuery.trim() || isLoading}
+              className={styles.llmsearchSearchButton}
+            >
+              {isLoading ? '⏳' : 'Search'}
+            </button>
           </div>
 
           {/* Results */}
-          <div className={styles.messagesContainer}>
-            <div className={styles.messages}>
-              {results.map((result, idx) => (
-                <div
-                  key={idx}
-                  className={classNames(
-                    styles.message,
-                    result.type === 'error' ? styles.assistantMessage : styles.userMessage
-                  )}
-                >
-                  <div className={styles.messageContent}>
-                    <div className={styles.messageHeader}>
-                      <span className={styles.messageAuthor}>
-                        {result.type === 'error' ? 'System' : 'Result'}
-                      </span>
-                    </div>
-                    <div className={styles.messageText}>
-                      {typeof result.content === 'string' ? result.content : JSON.stringify(result.content)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <div ref={resultsEndRef} />
-            </div>
+          <div className={styles.llmsearchResults}>
+            {results.map((result, idx) => (
+              <div
+                key={idx}
+                className={classNames(
+                  styles.llmsearchResult,
+                  result.type === 'error' && styles.systemResult
+                )}
+              >
+                {typeof result.content === 'string' ? result.content : JSON.stringify(result.content)}
+              </div>
+            ))}
+            <div ref={resultsEndRef} />
           </div>
         </div>
       </div>

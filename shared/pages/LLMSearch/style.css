@@ -1,0 +1,174 @@
+/* LLMSearch Perplexity-inspired UI */
+.llmsearchRoot {
+  min-height: 100vh;
+  background: #f4f6fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+.llmsearchContainer {
+  width: 100%;
+  max-width: 700px;
+  margin: 40px auto 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  padding: 32px 32px 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.llmsearchHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.llmsearchTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #23272f;
+  margin: 0;
+}
+
+.llmsearchSubtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.llmsearchWallet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.llmsearchWalletAddress {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 0.95rem;
+  color: #2563eb;
+  background: #e0e7ff;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.llmsearchWalletBalance {
+  font-size: 0.95rem;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.llmsearchConnectButton, .llmsearchDisconnectButton {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.llmsearchConnectButton {
+  background: #2563eb;
+  color: #fff;
+}
+.llmsearchConnectButton:hover {
+  background: #1d4ed8;
+}
+
+.llmsearchDisconnectButton {
+  background: #f87171;
+  color: #fff;
+}
+.llmsearchDisconnectButton:hover {
+  background: #dc2626;
+}
+
+.llmsearchRefreshButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 2px;
+  color: #059669;
+}
+
+.llmsearchSearchBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.llmsearchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1.15rem;
+  padding: 8px 0;
+  outline: none;
+  color: #23272f;
+}
+
+.llmsearchSearchButton {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.llmsearchSearchButton:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+.llmsearchSearchButton:not(:disabled):hover {
+  background: #1d4ed8;
+}
+
+.llmsearchResults {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.llmsearchResult {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  color: #23272f;
+  font-size: 1.08rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.systemResult {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+@media (max-width: 800px) {
+  .llmsearchContainer {
+    max-width: 98vw;
+    padding: 18px 4vw 12px 4vw;
+  }
+} 
