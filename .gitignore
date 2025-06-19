@@ -306,3 +306,38 @@ releases
 .DS_Store
 
 dump.rdb
+
+# AgentMeter specific environment files and sensitive data
+server/.env
+service/.env
+*.env.local
+*.env.production
+*.env.staging
+
+# Database dumps and backups
+*.sql.gz
+*.dump
+*.backup
+
+# API Keys and secrets
+**/secrets/
+**/keys/
+**/*.pem
+**/*.key
+**/*.crt
+
+# Google Cloud specific
+.gcloudignore
+cloudbuild.yaml
+service-account-key.json
+gcp-key.json
+
+# Docker
+Dockerfile.prod
+docker-compose.override.yml
+.dockerignore
+
+# Deployment artifacts
+deployment/
+terraform/
+k8s/
