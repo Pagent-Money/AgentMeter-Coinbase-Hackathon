@@ -20,7 +20,7 @@ const Root = ({ location, history, actions }) => {
     setTitle('Agent Meter')
   }, [])
 
-  const isChatPage = currentLocation.pathname === '/chat' || currentLocation.pathname === '/llm-search'
+  const isChatPage = currentLocation.pathname === '/chat' || currentLocation.pathname === '/search'
 
   return (
     <Fragment>

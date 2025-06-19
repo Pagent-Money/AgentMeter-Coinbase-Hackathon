@@ -5,7 +5,7 @@ import NoMatch from 'components/NoMatch'
 import { Landing } from 'routes/sync'
 import { Dashboard } from 'routes/sync'
 import { Chat } from 'routes/sync'
-import { LLMSearch } from 'routes/sync'
+import { Search } from 'routes/sync'
 
 export const routes = [
   {
@@ -25,8 +25,8 @@ export const routes = [
         component: Dashboard
       },
       {
-        path: 'llm-search',
-        component: LLMSearch
+        path: 'search',
+        component: Search
       },
       {
         path: '*',
@@ -42,7 +42,7 @@ export const RootRoutes = () => (
       <Route index element={<Landing />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="chat" element={<Chat />} />
-      <Route path="llm-search" element={<LLMSearch />} />
+      <Route path="search" element={<Search />} />
       <Route path="*" element={<NoMatch />} />
     </Route>
   </Routes>

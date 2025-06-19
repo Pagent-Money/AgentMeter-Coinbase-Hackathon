@@ -151,32 +151,32 @@ const Search = ({ actions }) => {
 
   return (
     <Fragment>
-      <div className={styles.llmsearchRoot}>
-        <div className={styles.llmsearchContainer}>
+      <div className={styles.searchRoot}>
+        <div className={styles.searchContainer}>
           {/* Header */}
-          <div className={styles.llmsearchHeader}>
-            <h1 className={styles.llmsearchTitle}>Search</h1>
-            <p className={styles.llmsearchSubtitle}>Search with Large Language Models (LLMs) - Powered by AgentMeter</p>
-            <div className={styles.llmsearchWallet}>
+          <div className={styles.searchHeader}>
+            <h1 className={styles.searchTitle}>Search</h1>
+            <p className={styles.searchSubtitle}>Search with Large Language Models (LLMs) - Powered by AgentMeter</p>
+            <div className={styles.searchWallet}>
               {isWalletConnected ? (
                 <>
-                  <span className={styles.llmsearchWalletAddress}>
+                  <span className={styles.searchWalletAddress}>
                     {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                   </span>
                   {walletBalance && (
-                    <span className={styles.llmsearchWalletBalance}>
+                    <span className={styles.searchWalletBalance}>
                       {walletBalance} ETH
-                      <button onClick={refreshBalance} className={styles.llmsearchRefreshButton} title="Refresh balance">
+                      <button onClick={refreshBalance} className={styles.searchRefreshButton} title="Refresh balance">
                         🔄
                       </button>
                     </span>
                   )}
-                  <button onClick={disconnectWallet} className={styles.llmsearchDisconnectButton}>
+                  <button onClick={disconnectWallet} className={styles.searchDisconnectButton}>
                     Disconnect
                   </button>
                 </>
               ) : (
-                <button onClick={connectWallet} className={styles.llmsearchConnectButton}>
+                <button onClick={connectWallet} className={styles.searchConnectButton}>
                   Connect Wallet
                 </button>
               )}
@@ -184,31 +184,31 @@ const Search = ({ actions }) => {
           </div>
 
           {/* Search Bar */}
-          <div className={styles.llmsearchSearchBar}>
+          <div className={styles.searchSearchBar}>
             <input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your search query here... (Press Enter to search)"
-              className={styles.llmsearchInput}
+              className={styles.searchInput}
               disabled={isLoading}
             />
             <button
               onClick={handleSearch}
               disabled={!searchQuery.trim() || isLoading}
-              className={styles.llmsearchSearchButton}
+              className={styles.searchSearchButton}
             >
               {isLoading ? '⏳' : 'Search'}
             </button>
           </div>
 
           {/* Results */}
-          <div className={styles.llmsearchResults}>
+          <div className={styles.searchResults}>
             {results.map((result, idx) => (
               <div
                 key={idx}
                 className={classNames(
-                  styles.llmsearchResult,
+                  styles.searchResult,
                   result.type === 'error' && styles.systemResult
                 )}
               >
