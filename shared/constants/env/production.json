@@ -6,6 +6,5 @@
   "SOCKET_URL": "ws://localhost:8080",
   "DATABASE_HOST": "localhost:27017",
   "REDIS_HOST": "localhost:6379",
-  "OPENAI_API_URL": "https://api.openai.com",
-  "OPENAI_API_KEY": "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"
+  "OPENAI_API_URL": "https://api.openai.com"
 }

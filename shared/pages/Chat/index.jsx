@@ -9,7 +9,7 @@ import { createWalletClient, custom, createPublicClient, http } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { wrapFetchWithPayment, decodeXPaymentResponse } from 'x402-fetch'
-import { API_URL } from 'constants/_env'
+import { API_URL } from 'constants/env'
 import styles from './style.css'
 
 const Chat = ({ actions }) => {

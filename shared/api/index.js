@@ -1,4 +1,4 @@
-import { SERVER_URL, HOST_URL, API_URL } from 'constants/_env'
+import { SERVER_URL, HOST_URL, API_URL } from 'constants/env'
 
 export const apiCreator = (baseUrl, baseOptions = {}) => async (method = 'GET', endPoint = '/hello', params = {}, moreOptions = {}) => {
   const options = { ...baseOptions, ...moreOptions }

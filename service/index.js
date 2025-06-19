@@ -64,6 +64,21 @@ app.use(
   )
 )
 
+app.use(
+  paymentMiddleware(
+    payTo,
+    {
+      'GET /search': {
+        price: '$0.001',
+        network: 'base-sepolia'
+      }
+    },
+    {
+      url: 'https://x402.org/facilitator'
+    }
+  )
+)
+
 // Project API endpoints
 app.post('/api/project/create', async (req, res) => {
   try {
@@ -329,6 +344,61 @@ app.get('/health', async (req, res) => {
     supabase: supabaseStatus,
     environment: process.env.NODE_ENV || 'development'
   })
+})
+
+app.get('/search', async (req, res) => {
+  try {
+    const query = req.query.query
+    if (!query) {
+      return res.status(400).json({ error: 'Missing query parameter' })
+    }
+
+    // Compose a system prompt for search
+    const messages = [
+      { role: 'system', content: 'You are a helpful AI search assistant. Answer the user query as accurately as possible.' },
+      { role: 'user', content: query }
+    ]
+
+    // Call OpenAI API
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages,
+      max_tokens: 1000,
+      temperature: 0.2
+    })
+
+    const response = completion.choices[0]?.message?.content
+    const usage = completion.usage
+
+    if (!response) {
+      return res.status(500).json({ error: 'No response received from OpenAI' })
+    }
+
+    res.json({
+      success: true,
+      response,
+      usage: {
+        prompt_tokens: usage?.prompt_tokens,
+        completion_tokens: usage?.completion_tokens,
+        total_tokens: usage?.total_tokens
+      }
+    })
+  } catch (error) {
+    console.error('Error in search API:', error)
+    if (error.status === 401) {
+      return res.status(401).json({ error: 'OpenAI API key is invalid or missing' })
+    }
+    if (error.status === 429) {
+      return res.status(429).json({ error: 'Rate limit exceeded for OpenAI API' })
+    }
+    if (error.type === 'APIConnectionTimeoutError' || error.code === 'TIMEOUT') {
+      return res.status(408).json({ error: 'Request timed out. Please try again in a moment.' })
+    }
+    if (error.type === 'APIConnectionError' || error.code === 'NETWORK_ERROR') {
+      return res.status(503).json({ error: 'Unable to connect to OpenAI API. Please check your internet connection and try again.' })
+    }
+    res.status(500).json({ error: 'Failed to process search request', details: error.message })
+  }
 })
 
 app.post('/chat', async (req, res) => {

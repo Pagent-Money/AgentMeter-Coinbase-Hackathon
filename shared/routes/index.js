@@ -5,6 +5,7 @@ import NoMatch from 'components/NoMatch'
 import { Landing } from 'routes/sync'
 import { Dashboard } from 'routes/sync'
 import { Chat } from 'routes/sync'
+import { Search } from 'routes/sync'
 
 export const routes = [
   {
@@ -24,6 +25,10 @@ export const routes = [
         component: Dashboard
       },
       {
+        path: 'search',
+        component: Search
+      },
+      {
         path: '*',
         component: NoMatch
       }
@@ -37,6 +42,7 @@ export const RootRoutes = () => (
       <Route index element={<Landing />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="chat" element={<Chat />} />
+      <Route path="search" element={<Search />} />
       <Route path="*" element={<NoMatch />} />
     </Route>
   </Routes>
