@@ -27,6 +27,54 @@ const Search = ({ actions }) => {
     scrollToBottom()
   }, [results])
 
+  // Auto-connect wallet on mount if available (like Chat)
+  useEffect(() => {
+    const autoConnect = async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+          if (accounts.length > 0) {
+            const address = accounts[0]
+            const account = {
+              address: address,
+              type: 'json-rpc',
+              signMessage: async (message) => {
+                return await window.ethereum.request({
+                  method: 'personal_sign',
+                  params: [message, address]
+                })
+              },
+              signTypedData: async (typedData) => {
+                return await window.ethereum.request({
+                  method: 'eth_signTypedData_v4',
+                  params: [address, JSON.stringify(typedData)]
+                })
+              },
+              signTransaction: async (transaction) => {
+                return await window.ethereum.request({
+                  method: 'eth_signTransaction',
+                  params: [transaction]
+                })
+              }
+            }
+            const client = createWalletClient({
+              chain: baseSepolia,
+              transport: custom(window.ethereum),
+              account: account
+            })
+            setWalletAddress(address)
+            setWalletClient(client)
+            setIsWalletConnected(true)
+            getWalletBalance(address)
+          }
+        } catch (error) {
+          // Ignore auto-connect errors
+        }
+      }
+    }
+    autoConnect()
+  }, [])
+
   const connectWallet = useCallback(async () => {
     try {
       if (typeof window.ethereum === 'undefined') {
