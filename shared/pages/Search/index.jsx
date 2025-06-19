@@ -121,16 +121,16 @@ const Search = ({ actions }) => {
     }
     try {
       const fetchWithPayment = wrapFetchWithPayment(fetch, walletClient)
-      const response = await fetchWithPayment(`${API_URL}/llm-search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: searchQuery })
+      const url = `${API_URL}/search?query=${encodeURIComponent(searchQuery)}`
+      const response = await fetchWithPayment(url, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       })
       if (response.status === 402) {
-        setResults([{ type: 'error', content: 'Payment required to access LLM Search API. Please complete the payment to continue.' }])
+        setResults([{ type: 'error', content: 'Payment required to access Search API. Please complete the payment to continue.' }])
       } else if (response.ok) {
         const body = await response.json()
-        setResults(body.results || [])
+        setResults([{ type: 'result', content: body }])
       } else {
         const errorBody = await response.json().catch(() => ({ error: 'Unknown error' }))
         setResults([{ type: 'error', content: `API Error: ${errorBody.error || response.statusText}` }])
@@ -212,7 +212,9 @@ const Search = ({ actions }) => {
                   result.type === 'error' && styles.systemResult
                 )}
               >
-                {typeof result.content === 'string' ? result.content : JSON.stringify(result.content)}
+                {typeof result.content === 'string'
+                  ? result.content
+                  : <pre style={{margin:0, fontSize:'1em', whiteSpace:'pre-wrap'}}>{JSON.stringify(result.content, null, 2)}</pre>}
               </div>
             ))}
             <div ref={resultsEndRef} />

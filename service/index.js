@@ -60,6 +60,21 @@ app.use(
   )
 )
 
+app.use(
+  paymentMiddleware(
+    payTo,
+    {
+      'GET /search': {
+        price: '$0.001',
+        network: 'base-sepolia'
+      }
+    },
+    {
+      url: 'https://x402.org/facilitator'
+    }
+  )
+)
+
 // Project API endpoints
 app.post('/api/project/create', async (req, res) => {
   try {
@@ -335,6 +350,13 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     mongodb: db ? 'connected' : 'disconnected'
+  })
+})
+
+app.get('/search', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
   })
 })
 
