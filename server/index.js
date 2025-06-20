@@ -58,7 +58,7 @@ if (cluster.isMaster) {
   </html>
     `
 
-  const port = 9090
+  const port = process.env.PORT || 9090
   const app = new Express()
 
   app.use(compression())

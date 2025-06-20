@@ -1,21 +1,16 @@
 import { all, fork } from 'redux-saga/effects'
+<<<<<<< Updated upstream
 import { ENV } from 'constants/env'
+=======
+import projectSaga from './project'
+>>>>>>> Stashed changes
 import intlSaga from './intl'
 import themeSaga from './theme'
-import projectSaga from './project'
-import loggerSaga from './logger'
-
-const sagas = {
-  intlSaga: fork(intlSaga),
-  themeSaga: fork(themeSaga),
-  projectSaga: fork(projectSaga),
-  loggerSaga: fork(loggerSaga)
-}
-
-if (ENV === 'production') {
-  delete sagas.loggerSaga
-}
 
 export default function* rootSaga() {
-  yield all(sagas)
+  yield all([
+    fork(projectSaga),
+    fork(intlSaga),
+    fork(themeSaga)
+  ])
 }

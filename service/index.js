@@ -8,12 +8,16 @@ import { v4 as uuidv4 } from 'uuid'
 import { authenticateProject, rateLimit } from './middleware/auth.js'
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
+import fs from 'fs'
 import { supabase, dbHelpers } from './config/supabase.js'
 
-// Load environment variables from the correct path
-dotenv.config({ path: path.resolve(process.cwd(), 'service', '.env') })
+// Load environment variables from .env file only if it exists (for development)
+const envPath = path.resolve(process.cwd(), 'service', '.env')
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath })
+}
 
-const port = process.env.SERVICE_PORT || 4021
+const port = process.env.PORT || process.env.SERVICE_PORT || 4021
 const app = new Express()
 const payTo = process.env.X402_PAY_TO_ADDRESS || '0x08Cd4C79fd197640c004e5aEd98Bb0b3a121bEe5'
 

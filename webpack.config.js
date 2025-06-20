@@ -31,7 +31,8 @@ const baseConfig = {
     mainFiles: ['index', 'index.web'],
     alias: {
       'react/jsx-runtime.js': 'react/jsx-runtime',
-      'react/jsx-dev-runtime.js': 'react/jsx-dev-runtime'
+      'react/jsx-dev-runtime.js': 'react/jsx-dev-runtime',
+      'constants/_env': resolve(__dirname, 'shared/constants/_env')
     }
   },
   stats: {
@@ -202,7 +203,7 @@ const baseConfig = {
         METRICS_ENDPOINT: JSON.stringify(process.env.METRICS_ENDPOINT)
       }
     }),
-    new webpack.NormalModuleReplacementPlugin(/.\/production/, `./${process.env.APP_ENV}.json`),
+    new webpack.NormalModuleReplacementPlugin(/.\/production/, `./${process.env.APP_ENV || "production"}.json`),
     new MiniCssExtractPlugin({
       filename: ifProduction('styles/bundle.css?v=[fullhash]', 'styles/bundle.css'),
       chunkFilename: ifProduction('styles/[name].chunk.css?v=[chunkhash]', 'styles/[name].chunk.css')
@@ -295,7 +296,29 @@ const serverConfig = {
     __dirname: false
   },
   plugins: [
-    ...baseConfig.plugins
+    // For server, only include plugins that don't hardcode environment variables
+    new webpack.NormalModuleReplacementPlugin(/.\/production/, `./${process.env.APP_ENV || "production"}.json`),
+    new MiniCssExtractPlugin({
+      filename: ifProduction('styles/bundle.css?v=[fullhash]', 'styles/bundle.css'),
+      chunkFilename: ifProduction('styles/[name].chunk.css?v=[chunkhash]', 'styles/[name].chunk.css')
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: join(__dirname, 'shared/resources/fonts'),
+          to: join(__dirname, 'static/fonts')
+        },
+        {
+          from: join(__dirname, 'shared/resources/images'),
+          to: join(__dirname, 'static/images')
+        }
+      ],
+    }),
+    // Add a minimal DefinePlugin that only sets NODE_ENV and APP_ENV for bundling
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+      'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV || 'production')
+    })
   ]
 }
 
@@ -311,14 +334,38 @@ const serviceConfig = {
     libraryTarget: 'commonjs2',
     publicPath: '/'
   },
-  externals: [nodeExternals()],
+  externals: [nodeExternals({
+    allowlist: ['dotenv']
+  })],
   node: {
     global: false,
     __filename: false,
     __dirname: false
   },
   plugins: [
-    ...baseConfig.plugins
+    // For service, only include plugins that don't hardcode environment variables
+    new webpack.NormalModuleReplacementPlugin(/.\/production/, `./${process.env.APP_ENV || "production"}.json`),
+    new MiniCssExtractPlugin({
+      filename: ifProduction('styles/bundle.css?v=[fullhash]', 'styles/bundle.css'),
+      chunkFilename: ifProduction('styles/[name].chunk.css?v=[chunkhash]', 'styles/[name].chunk.css')
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: join(__dirname, 'shared/resources/fonts'),
+          to: join(__dirname, 'static/fonts')
+        },
+        {
+          from: join(__dirname, 'shared/resources/images'),
+          to: join(__dirname, 'static/images')
+        }
+      ],
+    }),
+    // Add a minimal DefinePlugin that only sets NODE_ENV and APP_ENV for bundling
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+      'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV || 'production')
+    })
   ]
 }
 
