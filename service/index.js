@@ -45,8 +45,17 @@ testSupabaseConnection()
 
 // Enable CORS for all routes
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
-  credentials: process.env.CORS_CREDENTIALS === 'true'
+  origin: process.env.CORS_ORIGIN?.split(',') || [
+    'http://localhost:3000', 
+    'http://localhost:4003', 
+    'http://localhost:9090',
+    'https://agentmeter-frontend-hxfxqbv2ia-uc.a.run.app'
+  ],
+  credentials: process.env.CORS_CREDENTIALS === 'true',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }))
 app.use(Express.json())
 
