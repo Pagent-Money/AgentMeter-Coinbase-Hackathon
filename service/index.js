@@ -12,7 +12,11 @@ import fs from 'fs'
 import { supabase, dbHelpers } from './config/supabase.js'
 
 // Load environment variables from .env file only if it exists (for development)
+<<<<<<< Updated upstream
 const envPath = path.resolve(process.cwd(), '.env')
+=======
+const envPath = path.resolve(process.cwd(), 'service', '.env')
+>>>>>>> Stashed changes
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath })
 }
