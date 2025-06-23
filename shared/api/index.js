@@ -1,4 +1,5 @@
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 import { SERVER_URL, HOST_URL, API_URL } from 'constants/env'
 
 export const apiCreator = (baseUrl, baseOptions = {}) => async (method = 'GET', endPoint = '/hello', params = {}, moreOptions = {}) => {
@@ -83,6 +84,9 @@ export const codeApi = apiCreator(`${HOST_URL}`, {
     'Content-Type': 'application/javascript'
   }
 })
+=======
+ 
+>>>>>>> Stashed changes
 =======
  
 >>>>>>> Stashed changes
