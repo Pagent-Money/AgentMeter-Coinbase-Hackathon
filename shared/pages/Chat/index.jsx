@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 import React, { useEffect, useState, useCallback, Fragment, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { bindActionCreators } from 'redux'
@@ -643,9 +641,3 @@ export default withRouter(
     })
   )(Chat)
 )
-=======
- 
->>>>>>> Stashed changes
-=======
- 
->>>>>>> Stashed changes
