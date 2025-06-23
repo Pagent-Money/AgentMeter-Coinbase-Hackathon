@@ -12,7 +12,7 @@ import fs from 'fs'
 import { supabase, dbHelpers } from './config/supabase.js'
 
 // Load environment variables from .env file only if it exists (for development)
-const envPath = path.resolve(process.cwd(), 'service', '.env')
+const envPath = path.resolve(process.cwd(), '.env')
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath })
 }
@@ -53,7 +53,24 @@ app.use(cors({
   ],
   credentials: process.env.CORS_CREDENTIALS === 'true',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Allow-Methods',
+    'Access-Control-Expose-Headers',
+    'Access-Control-Allow-Credentials'
+  ],
+  exposedHeaders: [
+    'Content-Length',
+    'Content-Type',
+    'X-Request-ID',
+    'X-Response-Time'
+  ],
   preflightContinue: false,
   optionsSuccessStatus: 200
 }))
