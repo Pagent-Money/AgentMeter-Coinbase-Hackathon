@@ -23,7 +23,7 @@ export default handleActions({
     return {
       ...state,
       loading: false,
-      projects: [...state.projects, action.payload],
+      projects: [action.payload, ...state.projects],
       error: null
     }
   },

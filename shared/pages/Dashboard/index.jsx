@@ -460,7 +460,7 @@ meter = AgentMeter(
                                    <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 4 ? '1px solid #f3f4f6' : 'none' }}>
                                      <div>
                                        <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
-                                       <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{stats.calls} calls</p>
+                                       <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{!isNaN(stats.calls) && stats.calls != null ? stats.calls : 0} calls</p>
                                      </div>
                                      <span style={{ color: '#10b981', fontWeight: '500' }}>${stats.revenue != null ? stats.revenue.toFixed(3) : '0.000'}</span>
                                    </div>
