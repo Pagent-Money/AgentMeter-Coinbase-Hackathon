@@ -174,6 +174,62 @@ export const dbHelpers = {
     
     if (error) throw error
     return data
+  },
+
+  // Thresholds
+  async getUserThreshold(projectId, userId) {
+    const { data, error } = await supabase
+      .from('threshold')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116: No rows found
+    return data;
+  },
+
+  async setUserThreshold(projectId, userId, amount) {
+    // Upsert threshold amount for user in project
+    const { data, error } = await supabase
+      .from('threshold')
+      .upsert({
+        project_id: projectId,
+        user_id: userId,
+        threshold_amount: amount,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: ['project_id', 'user_id'] })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async incrementUserUsage(projectId, userId, amount) {
+    // Increment current_usage and return updated row
+    const { data, error } = await supabase.rpc('increment_user_usage', {
+      p_project_id: projectId,
+      p_user_id: userId,
+      p_amount: amount
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async resetUserThreshold(projectId, userId) {
+    // Reset current_usage to 0 and update last_reset_at
+    const { data, error } = await supabase
+      .from('threshold')
+      .update({
+        current_usage: 0,
+        last_reset_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
 }
 
