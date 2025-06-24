@@ -1,196 +1,233 @@
-# Database Management Features
-
-This document describes the database management features implemented for the AgentMeter project.
+# Database Documentation
 
 ## Overview
 
-The system now includes comprehensive database management capabilities using MongoDB for storing projects and meter events. The implementation includes:
+This project uses Supabase as its backend database. The main tables managed are:
 
-- **Project Management**: Create, read, update, and delete projects
-- **Meter Events**: Record and retrieve usage data
-- **Real-time Dashboard**: Live data display with Redux state management
-- **API Integration**: RESTful endpoints with payment middleware
+- `projects`
+- `metering_events`
+- `billing_records`
 
-## Database Schema
+Additionally, there is a stored procedure (RPC) called `get_metering_stats`.
 
-### Projects Collection
+---
 
-```javascript
-{
-  id: "proj_abc123def456",           // Unique project identifier
-  name: "AI Assistant Bot",          // Project name
-  description: "Chatbot for customer support", // Optional description
-  status: "Active",                  // Project status (Active/Paused)
-  secret_key: "sk_live_...",        // API secret key
-  settings: {                        // Project configuration
-    requestPricing: 0.001,
-    inputTokenPricing: 0.002,
-    outputTokenPricing: 0.004
-  },
-  created: "2024-01-15",            // Creation date (YYYY-MM-DD)
-  createdAt: Date,                  // MongoDB timestamp
-  updatedAt: Date                   // Last update timestamp
-}
+## Tables
+
+### 1. `projects`
+
+**Purpose:**  
+Stores information about each project.
+
+**Likely Fields:**
+- `id` (primary key)
+- `name`
+- `description`
+- `created_at`
+- `updated_at`
+- (other project-specific fields)
+
+**Helper Functions:**
+- `createProject(projectData)`
+- `getProject(projectId)`
+- `getAllProjects()`
+- `updateProject(projectId, updateData)`
+- `deleteProject(projectId)`
+
+---
+
+### 2. `metering_events`
+
+**Purpose:**  
+Tracks usage or metering events for each project.
+
+**Likely Fields:**
+- `id` (primary key)
+- `project_id` (foreign key to `projects`)
+- `agent_id`
+- `user_id`
+- `event_type`
+- `timestamp`
+- (other event-specific fields)
+
+**Helper Functions:**
+- `createMeteringEvent(eventData)`
+- `getMeteringEvents(projectId, filters = {})`
+  - Filters: `agent_id`, `user_id`, `event_type`, `start_date`, `end_date`, `limit`
+- `getMeteringStats(projectId, timeframe = '30 days')` (calls the stored procedure)
+
+---
+
+### 3. `billing_records`
+
+**Purpose:**  
+Stores billing information for each project.
+
+**Likely Fields:**
+- `id` (primary key)
+- `project_id` (foreign key to `projects`)
+- `period_start`
+- `period_end`
+- `amount`
+- `status`
+- `created_at`
+- `updated_at`
+- (other billing-specific fields)
+
+**Helper Functions:**
+- `createBillingRecord(billingData)`
+- `getBillingRecords(projectId)`
+- `updateBillingRecord(recordId, updateData)`
+
+---
+
+## Stored Procedures
+
+### `get_metering_stats`
+
+**Purpose:**  
+Returns metering statistics for a given project and timeframe.
+
+**Parameters:**
+- `p_project_id`
+- `p_timeframe` (default: `'30 days'`)
+
+---
+
+## Usage Example
+
+All database operations are available via the `dbHelpers` object. Example usage:
+
+```js
+import { dbHelpers } from './service/config/supabase.js';
+
+// Create a new project
+const project = await dbHelpers.createProject({ name: 'My Project' });
+
+// Get all projects
+const projects = await dbHelpers.getAllProjects();
+
+// Log metering events for a project
+const events = await dbHelpers.getMeteringEvents(project.id, { event_type: 'api_call' });
+
+// Get billing records
+const billing = await dbHelpers.getBillingRecords(project.id);
 ```
 
-### Meter Events Collection
-
-```javascript
-{
-  project_id: "proj_abc123def456",  // Reference to project
-  agent_id: "assistant-v1",         // Agent identifier
-  user_id: "user_123",              // User identifier
-  tokens_in: 150,                   // Input tokens
-  tokens_out: 75,                   // Output tokens
-  api_calls: 1,                     // Number of API calls
-  timestamp: Date,                  // Event timestamp
-  request_cost: 0.001,              // Cost for API requests
-  token_cost: 0.005,                // Cost for tokens
-  total_cost: 0.006                 // Total cost
-}
-```
-
-## API Endpoints
-
-### Project Management
-
-- `POST /api/project/create` - Create a new project
-- `GET /api/project/load` - Load a specific project
-- `GET /api/projects` - List all projects
-- `PUT /api/project/:id` - Update a project
-- `DELETE /api/project/:id` - Delete a project
-
-### Meter Events
-
-- `POST /api/meter/event` - Record a meter event
-- `GET /api/meter/events` - Retrieve meter events
-
-## Setup Instructions
-
-### 1. Database Initialization
-
-```bash
-# Initialize database collections and indexes
-npm run init-db
-
-# Seed with sample data
-npm run seed
-
-# Or run both at once
-npm run setup
-```
-
-### 2. Start the Service
-
-```bash
-# Build and start the service
-npm run service
-```
-
-### 3. Access the Dashboard
-
-Navigate to the Dashboard page to:
-- View all projects
-- Create new projects
-- Manage project settings
-- View meter events and analytics
-- Monitor revenue and usage
-
-## Features
-
-### Project Management
-- **Create Projects**: Add new projects with name and description
-- **Project List**: View all projects with status and creation date
-- **Project Details**: View project ID, secret key, and configuration
-- **Delete Projects**: Remove projects with confirmation
-- **Real-time Updates**: Changes reflect immediately in the UI
-
-### Meter Events
-- **Event Recording**: Track API calls, tokens, and costs
-- **Event History**: View detailed event logs
-- **Analytics**: Real-time statistics and trends
-- **Filtering**: Filter events by agent and time period
-
-### Dashboard Features
-- **Loading States**: Visual feedback during data operations
-- **Error Handling**: Display error messages for failed operations
-- **Responsive Design**: Works on desktop and mobile devices
-- **Copy to Clipboard**: Easy copying of project IDs and keys
-
-## Redux State Management
-
-The application uses Redux for state management with the following structure:
-
-```javascript
-{
-  project: {
-    projects: [],           // Array of all projects
-    currentProject: null,   // Currently selected project
-    meterEvents: [],        // Array of meter events
-    loading: false,         // Loading state
-    error: null            // Error state
-  }
-}
-```
+---
 
 ## Environment Variables
 
-Set the following environment variables:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
+These must be set in your environment or in `service/.env`.
+
+---
+
+## Notes
+
+- All helper functions throw errors if the database operation fails.
+- Timestamps are managed in ISO string format.
+- The code expects the Supabase tables and stored procedures to be set up as described above.
+
+---
+
+## API Testing Examples with cURL
+
+### Projects API
+
+#### Create a Project
 ```bash
-MONGODB_URI=mongodb://localhost:27017/agentmeter
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/projects' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{"name": "My Test Project", "description": "A test project"}'
 ```
 
-## Security Features
-
-- **Secret Key Generation**: Automatic generation of secure API keys
-- **Payment Middleware**: All API endpoints require payment
-- **Input Validation**: Server-side validation of all inputs
-- **Error Handling**: Comprehensive error handling and logging
-
-## Performance Optimizations
-
-- **Database Indexes**: Optimized queries with proper indexing
-- **Pagination**: Support for limiting and offsetting results
-- **Caching**: Redux state caching for better performance
-- **Lazy Loading**: Load data only when needed
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failed**
-   - Ensure MongoDB is running
-   - Check MONGODB_URI environment variable
-   - Verify network connectivity
-
-2. **Projects Not Loading**
-   - Check browser console for errors
-   - Verify API endpoints are accessible
-   - Ensure payment middleware is configured
-
-3. **Meter Events Not Recording**
-   - Verify project_id and agent_id are provided
-   - Check API response for error messages
-   - Ensure database is properly initialized
-
-### Debug Commands
-
+#### Get All Projects
 ```bash
-# Check database connection
-npm run init-db
-
-# View database contents
-mongo agentmeter --eval "db.projects.find().pretty()"
-
-# Check service logs
-npm run service:dev
+curl 'https://YOUR_SUPABASE_URL/rest/v1/projects?select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
 ```
 
-## Future Enhancements
+#### Get Single Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/projects?id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
 
-- **User Authentication**: Add user management and authentication
-- **Advanced Analytics**: More detailed reporting and charts
-- **Webhook Support**: Real-time notifications for events
-- **Bulk Operations**: Support for bulk project and event operations
-- **Export Features**: Export data to CSV/JSON formats 
+### Metering Events API
+
+#### Create Metering Event
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/metering_events' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{
+    "project_id": "YOUR_PROJECT_ID",
+    "agent_id": "agent123",
+    "user_id": "user123",
+    "event_type": "api_call",
+    "timestamp": "2024-03-21T00:00:00Z"
+  }'
+```
+
+#### Get Metering Events for a Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/metering_events?project_id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+#### Get Metering Stats (RPC)
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/rpc/get_metering_stats' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "p_project_id": "YOUR_PROJECT_ID",
+    "p_timeframe": "30 days"
+  }'
+```
+
+### Billing Records API
+
+#### Create Billing Record
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/billing_records' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{
+    "project_id": "YOUR_PROJECT_ID",
+    "period_start": "2024-03-01T00:00:00Z",
+    "period_end": "2024-03-31T23:59:59Z",
+    "amount": 100.00,
+    "status": "pending"
+  }'
+```
+
+#### Get Billing Records for a Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/billing_records?project_id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+---
+
+**Note:**
+- Replace `YOUR_SUPABASE_URL` with your actual Supabase project URL
+- Replace `YOUR_SUPABASE_SERVICE_ROLE_KEY` with your Supabase service role key
+- Replace `YOUR_PROJECT_ID` with an actual project ID when testing
+- Adjust the request bodies (`-d` parameter) according to your actual data needs
+- These examples use the service role key for demonstration. For production use, you might want to use service role key or user JWT tokens depending on your security requirements. 

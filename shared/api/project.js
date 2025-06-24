@@ -20,5 +20,5 @@ export const deleteProject = ({ id }, options) =>
 export const recordMeterEvent = ({ project_id, agent_id, user_id, tokens_in, tokens_out, api_calls }, options) =>
   meterApi('POST', '/meter/event', { project_id, agent_id, user_id, tokens_in, tokens_out, api_calls }, options)
 
-export const loadMeterEvents = ({ project_id, agent_id, limit, offset }, options) =>
-  meterApi('GET', '/meter/events', { project_id, agent_id, limit, offset }, options)
+export const loadMeterEvents = ({ project_id }, options) =>
+  meterApi('GET', '/meter/events', { project_id }, options)
