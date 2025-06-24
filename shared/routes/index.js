@@ -4,8 +4,6 @@ import Root from 'pages/Root'
 import NoMatch from 'components/NoMatch'
 import { Landing } from 'routes/sync'
 import { Dashboard } from 'routes/sync'
-import { Chat } from 'routes/sync'
-import { Search } from 'routes/sync'
 
 export const routes = [
   {
@@ -19,14 +17,6 @@ export const routes = [
       {
         path: 'dashboard',
         component: Dashboard
-      },
-      {
-        path: 'chat',
-        component: Dashboard
-      },
-      {
-        path: 'search',
-        component: Search
       },
       {
         path: '*',

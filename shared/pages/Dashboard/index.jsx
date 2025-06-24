@@ -20,6 +20,9 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   const [selectedAgent, setSelectedAgent] = useState('all')
   const [timeFilter, setTimeFilter] = useState('24h')
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [copiedSecretKey, setCopiedSecretKey] = useState(false)
+  const [showSecretKey, setShowSecretKey] = useState(false)
+  const [copiedProjectId, setCopiedProjectId] = useState(false)
 
   // Load projects on component mount
   useEffect(() => {
@@ -147,6 +150,20 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
       }
     }
   }, [actions, selectedProject, projects])
+
+  // Handler for copying secret key
+  const handleCopySecretKey = useCallback((key) => {
+    navigator.clipboard.writeText(key)
+    setCopiedSecretKey(true)
+    setTimeout(() => setCopiedSecretKey(false), 1500)
+  }, [])
+
+  // Handler for copying project ID
+  const handleCopyProjectId = useCallback((id) => {
+    navigator.clipboard.writeText(id)
+    setCopiedProjectId(true)
+    setTimeout(() => setCopiedProjectId(false), 1500)
+  }, [])
 
   const selectedProjectData = projects.find(p => p.id === selectedProject)
   const filteredEvents = getFilteredEvents()
@@ -303,19 +320,37 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
                             }}
                           />
                           <button
-                            onClick={() => navigator.clipboard.writeText(selectedProjectData.id)}
-                            style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                            onClick={() => handleCopyProjectId(selectedProjectData.id)}
+                            style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', position: 'relative' }}
                           >
                             📋
+                            {copiedProjectId && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '-2.2rem',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: '#2563eb',
+                                color: 'white',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.85rem',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                whiteSpace: 'nowrap',
+                                zIndex: 10
+                              }}>
+                                Copied!
+                              </span>
+                            )}
                           </button>
                         </div>
                       </div>
 
                       <div style={{ marginBottom: '1.5rem' }}>
                         <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem', color: '#374151' }}>Project Secret Key</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
                           <input
-                            type="password"
+                            type={showSecretKey ? 'text' : 'password'}
                             value={selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890'}
                             readOnly
                             style={{
@@ -327,12 +362,36 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
                               fontFamily: 'monospace'
                             }}
                           />
-                          <button style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}>👁️</button>
                           <button
-                            onClick={() => navigator.clipboard.writeText(selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890')}
+                            onClick={() => setShowSecretKey(v => !v)}
                             style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer' }}
+                            aria-label={showSecretKey ? 'Hide secret key' : 'Show secret key'}
+                          >
+                            {showSecretKey ? '🙈' : '👁️'}
+                          </button>
+                          <button
+                            onClick={() => handleCopySecretKey(selectedProjectData.secret_key || 'sk_live_abc123def456ghi789jkl012mno345pqr678stu901vwx234yzabc567def890')}
+                            style={{ padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', position: 'relative' }}
                           >
                             📋
+                            {copiedSecretKey && (
+                              <span style={{
+                                position: 'absolute',
+                                top: '-2.2rem',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: '#2563eb',
+                                color: 'white',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.85rem',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                whiteSpace: 'nowrap',
+                                zIndex: 10
+                              }}>
+                                Copied!
+                              </span>
+                            )}
                           </button>
                         </div>
                         <p style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.5rem' }}>⚠️ Keep this secret key secure. It provides full access to your project.</p>
