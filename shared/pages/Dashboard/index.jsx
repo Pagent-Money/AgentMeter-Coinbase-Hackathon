@@ -18,7 +18,7 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectDescription, setNewProjectDescription] = useState('')
   const [selectedAgent, setSelectedAgent] = useState('all')
-  const [timeFilter, setTimeFilter] = useState('24h')
+  const [timeFilter, setTimeFilter] = useState('all')
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [copiedSecretKey, setCopiedSecretKey] = useState(false)
   const [showSecretKey, setShowSecretKey] = useState(false)
@@ -86,23 +86,24 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
   const getRevenueStats = useCallback(() => {
     const filteredEvents = getFilteredEvents()
     
-    const totalRequestCost = filteredEvents.reduce((sum, event) => sum + event.request_cost, 0)
-    const totalTokenCost = filteredEvents.reduce((sum, event) => sum + event.token_cost, 0)
+    const totalRequestCost = filteredEvents.reduce((sum, event) => sum + (Number(event.request_cost) || 0), 0)
+    const totalTokenCost = filteredEvents.reduce((sum, event) => sum + (Number(event.token_cost) || 0), 0)
     const totalCost = totalRequestCost + totalTokenCost
     
-    const totalApiCalls = filteredEvents.reduce((sum, event) => sum + event.api_calls, 0)
-    const totalTokensIn = filteredEvents.reduce((sum, event) => sum + event.tokens_in, 0)
-    const totalTokensOut = filteredEvents.reduce((sum, event) => sum + event.tokens_out, 0)
+    const totalApiCalls = filteredEvents.reduce((sum, event) => sum + (Number(event.api_calls) || 0), 0)
+    const totalTokensIn = filteredEvents.reduce((sum, event) => sum + (Number(event.tokens_in) || 0), 0)
+    const totalTokensOut = filteredEvents.reduce((sum, event) => sum + (Number(event.tokens_out) || 0), 0)
     
+    const safe = v => (isNaN(v) ? 0 : v)
     return {
-      totalRequestCost,
-      totalTokenCost,
-      totalCost,
-      totalApiCalls,
-      totalTokensIn,
-      totalTokensOut,
-      avgCostPerRequest: totalApiCalls > 0 ? totalCost / totalApiCalls : 0,
-      avgCostPerToken: (totalTokensIn + totalTokensOut) > 0 ? totalCost / ((totalTokensIn + totalTokensOut) / 1000) : 0
+      totalRequestCost: safe(totalRequestCost),
+      totalTokenCost: safe(totalTokenCost),
+      totalCost: safe(totalCost),
+      totalApiCalls: safe(totalApiCalls),
+      totalTokensIn: safe(totalTokensIn),
+      totalTokensOut: safe(totalTokensOut),
+      avgCostPerRequest: totalApiCalls > 0 ? safe(totalCost / totalApiCalls) : 0,
+      avgCostPerToken: (totalTokensIn + totalTokensOut) > 0 ? safe(totalCost / ((totalTokensIn + totalTokensOut) / 1000)) : 0
     }
   }, [getFilteredEvents])
 
@@ -429,12 +430,12 @@ meter = AgentMeter(
               {/* Stats Overview */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {[
-                  { title: 'API Requests', subtitle: 'Request-based metering', value: revenueStats.totalApiCalls.toLocaleString(), change: '+15%', icon: '🔄' },
-                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: (revenueStats.totalTokensIn / 1000000).toFixed(1) + 'M', change: '+22%', icon: '📥' },
-                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: (revenueStats.totalTokensOut / 1000000).toFixed(1) + 'M', change: '+18%', icon: '📤' },
-                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$' + revenueStats.totalRequestCost.toFixed(3), change: '+15%', icon: '💰' },
-                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$' + revenueStats.totalTokenCost.toFixed(3), change: '+20%', icon: '💵' },
-                  { title: 'Total Revenue', subtitle: 'Combined revenue', value: '$' + revenueStats.totalCost.toFixed(3), change: '+18%', icon: '💎' }
+                  { title: 'API Requests', subtitle: 'Request-based metering', value: revenueStats.totalApiCalls != null ? revenueStats.totalApiCalls.toLocaleString() : '0', change: '+15%', icon: '🔄' },
+                  { title: 'Input Tokens', subtitle: 'Token-based metering', value: revenueStats.totalTokensIn != null && !isNaN(revenueStats.totalTokensIn) ? (revenueStats.totalTokensIn / 1000000).toFixed(1) + 'M' : '0M', change: '+22%', icon: '📥' },
+                  { title: 'Output Tokens', subtitle: 'Token-based metering', value: revenueStats.totalTokensOut != null && !isNaN(revenueStats.totalTokensOut) ? (revenueStats.totalTokensOut / 1000000).toFixed(1) + 'M' : '0M', change: '+18%', icon: '📤' },
+                  { title: 'Request Revenue', subtitle: 'API-based billing', value: '$' + (revenueStats.totalRequestCost != null ? revenueStats.totalRequestCost.toFixed(3) : '0.000'), change: '+15%', icon: '💰' },
+                  { title: 'Token Revenue', subtitle: 'Token-based billing', value: '$' + (revenueStats.totalTokenCost != null ? revenueStats.totalTokenCost.toFixed(3) : '0.000'), change: '+20%', icon: '💵' },
+                  { title: 'Total Revenue', subtitle: 'Combined revenue', value: '$' + (revenueStats.totalCost != null ? revenueStats.totalCost.toFixed(3) : '0.000'), change: '+18%', icon: '💎' }
                 ].map((stat, index) => (
                   <div key={index} style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -470,17 +471,17 @@ meter = AgentMeter(
                     }, {})
 
                     return Object.entries(agentStats)
-                      .sort(([,a], [,b]) => b.revenue - a.revenue)
-                      .slice(0, 5)
-                      .map(([agent, stats], index) => (
-                        <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 4 ? '1px solid #f3f4f6' : 'none' }}>
-                          <div>
-                            <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
-                            <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{stats.calls} calls</p>
-                          </div>
-                          <span style={{ color: '#10b981', fontWeight: '500' }}>${stats.revenue.toFixed(3)}</span>
-                        </div>
-                      ))
+                                 .sort(([,a], [,b]) => b.revenue - a.revenue)
+                                 .slice(0, 5)
+                                 .map(([agent, stats], index) => (
+                                   <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 4 ? '1px solid #f3f4f6' : 'none' }}>
+                                     <div>
+                                       <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
+                                       <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{stats.calls} calls</p>
+                                     </div>
+                                     <span style={{ color: '#10b981', fontWeight: '500' }}>${stats.revenue != null ? stats.revenue.toFixed(3) : '0.000'}</span>
+                                   </div>
+                                 ))
                   })()}
                 </div>
               </div>
@@ -539,7 +540,7 @@ meter = AgentMeter(
                       </tr>
                     </thead>
                     <tbody>
-                      {loading ? (
+                      {loading && filteredEvents.length === 0 ? (
                         <tr>
                           <td colSpan="9" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading events...</td>
                         </tr>
@@ -553,11 +554,11 @@ meter = AgentMeter(
                             <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.agent_id}</td>
                             <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem' }}>{event.user_id}</td>
                             <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>{event.api_calls}</td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_in.toLocaleString()}</td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_out.toLocaleString()}</td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#059669' }}>${event.request_cost.toFixed(3)}</td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#dc2626' }}>${event.token_cost.toFixed(3)}</td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>${event.total_cost.toFixed(3)}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_in != null ? event.tokens_in.toLocaleString() : '0'}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right' }}>{event.tokens_out != null ? event.tokens_out.toLocaleString() : '0'}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#059669' }}>${event.request_cost != null ? event.request_cost.toFixed(3) : '0.000'}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', color: '#dc2626' }}>${event.token_cost != null ? event.token_cost.toFixed(3) : '0.000'}</td>
+                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '500' }}>${event.total_cost != null ? event.total_cost.toFixed(3) : '0.000'}</td>
                             <td style={{ padding: '0.75rem', color: '#6b7280', fontSize: '0.875rem' }}>{new Date(event.timestamp).toLocaleString()}</td>
                           </tr>
                         ))

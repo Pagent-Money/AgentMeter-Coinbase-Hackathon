@@ -129,4 +129,105 @@ These must be set in your environment or in `service/.env`.
 
 - All helper functions throw errors if the database operation fails.
 - Timestamps are managed in ISO string format.
-- The code expects the Supabase tables and stored procedures to be set up as described above. 
+- The code expects the Supabase tables and stored procedures to be set up as described above.
+
+---
+
+## API Testing Examples with cURL
+
+### Projects API
+
+#### Create a Project
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/projects' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{"name": "My Test Project", "description": "A test project"}'
+```
+
+#### Get All Projects
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/projects?select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+#### Get Single Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/projects?id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+### Metering Events API
+
+#### Create Metering Event
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/metering_events' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{
+    "project_id": "YOUR_PROJECT_ID",
+    "agent_id": "agent123",
+    "user_id": "user123",
+    "event_type": "api_call",
+    "timestamp": "2024-03-21T00:00:00Z"
+  }'
+```
+
+#### Get Metering Events for a Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/metering_events?project_id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+#### Get Metering Stats (RPC)
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/rpc/get_metering_stats' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "p_project_id": "YOUR_PROJECT_ID",
+    "p_timeframe": "30 days"
+  }'
+```
+
+### Billing Records API
+
+#### Create Billing Record
+```bash
+curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/billing_records' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=minimal" \
+  -d '{
+    "project_id": "YOUR_PROJECT_ID",
+    "period_start": "2024-03-01T00:00:00Z",
+    "period_end": "2024-03-31T23:59:59Z",
+    "amount": 100.00,
+    "status": "pending"
+  }'
+```
+
+#### Get Billing Records for a Project
+```bash
+curl 'https://YOUR_SUPABASE_URL/rest/v1/billing_records?project_id=eq.YOUR_PROJECT_ID&select=*' \
+  -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY"
+```
+
+---
+
+**Note:**
+- Replace `YOUR_SUPABASE_URL` with your actual Supabase project URL
+- Replace `YOUR_SUPABASE_SERVICE_ROLE_KEY` with your Supabase service role key
+- Replace `YOUR_PROJECT_ID` with an actual project ID when testing
+- Adjust the request bodies (`-d` parameter) according to your actual data needs
+- These examples use the service role key for demonstration. For production use, you might want to use service role key or user JWT tokens depending on your security requirements. 
