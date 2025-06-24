@@ -31,8 +31,6 @@ export const RootRoutes = () => (
     <Route path="*" element={<Root />}>
       <Route index element={<Landing />} />
       <Route path="dashboard" element={<Dashboard />} />
-      <Route path="chat" element={<Chat />} />
-      <Route path="search" element={<Search />} />
       <Route path="*" element={<NoMatch />} />
     </Route>
   </Routes>
