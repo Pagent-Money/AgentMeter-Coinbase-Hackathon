@@ -36,33 +36,16 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
     }
   }, [projects, selectedProject])
 
-  // Load meter events for selected project
+  // Load meter events for selected project (only when switching project)
   useEffect(() => {
     if (selectedProject) {
-      const params = { 
-        project_id: selectedProject, 
-        limit: 100,
-        agent_id: selectedAgent !== 'all' ? selectedAgent : undefined
+      const params = {
+        project_id: selectedProject,
+        limit: 100
       }
       actions.loadMeterEvents(params)
     }
-  }, [selectedProject, selectedAgent, actions])
-
-  // Auto-refresh meter events every 30 seconds
-  useEffect(() => {
-    if (!autoRefresh || !selectedProject) return
-
-    const interval = setInterval(() => {
-      const params = { 
-        project_id: selectedProject, 
-        limit: 100,
-        agent_id: selectedAgent !== 'all' ? selectedAgent : undefined
-      }
-      actions.loadMeterEvents(params)
-    }, 30000)
-
-    return () => clearInterval(interval)
-  }, [autoRefresh, selectedProject, selectedAgent, actions])
+  }, [selectedProject, actions])
 
   // Calculate filtered events based on time filter
   const getFilteredEvents = useCallback(() => {
