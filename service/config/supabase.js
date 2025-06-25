@@ -176,10 +176,10 @@ export const dbHelpers = {
     return data
   },
 
-  // Thresholds
-  async getUserThreshold(projectId, userId) {
+  // Meter (was Thresholds)
+  async getUserMeter(projectId, userId) {
     const { data, error } = await supabase
-      .from('threshold')
+      .from('meter')
       .select('*')
       .eq('project_id', projectId)
       .eq('user_id', userId)
@@ -188,10 +188,10 @@ export const dbHelpers = {
     return data;
   },
 
-  async setUserThreshold(projectId, userId, amount) {
-    // Upsert threshold amount for user in project
+  async setUserMeter(projectId, userId, amount) {
+    // Upsert meter amount for user in project
     const { data, error } = await supabase
-      .from('threshold')
+      .from('meter')
       .upsert({
         project_id: projectId,
         user_id: userId,
@@ -204,8 +204,8 @@ export const dbHelpers = {
     return data;
   },
 
-  async incrementUserUsage(projectId, userId, amount) {
-    // Increment current_usage and return updated row
+  async incrementUserMeterUsage(projectId, userId, amount) {
+    // Increment current_usage and return updated row (meter)
     const { data, error } = await supabase.rpc('increment_user_usage', {
       p_project_id: projectId,
       p_user_id: userId,
@@ -215,10 +215,10 @@ export const dbHelpers = {
     return data;
   },
 
-  async resetUserThreshold(projectId, userId) {
+  async resetUserMeter(projectId, userId) {
     // Reset current_usage to 0 and update last_reset_at
     const { data, error } = await supabase
-      .from('threshold')
+      .from('meter')
       .update({
         current_usage: 0,
         last_reset_at: new Date().toISOString(),
