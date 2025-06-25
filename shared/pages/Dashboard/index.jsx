@@ -711,27 +711,27 @@ meter = AgentMeter(
                         </tr>
                       ) : (
                         billingRecords.map((invoice, index) => (
-                          <tr key={invoice.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: '500' }}>{invoice.id}</td>
+                        <tr key={invoice.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: '500' }}>{invoice.id}</td>
                             <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>{invoice.period_start} - {invoice.period_end}</td>
-                            <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>{invoice.usage}</td>
+                          <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>{invoice.usage}</td>
                             <td style={{ padding: '0.75rem', fontWeight: '500' }}>${invoice.amount != null ? Number(invoice.amount).toFixed(2) : '0.00'}</td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <span style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '20px',
-                                fontSize: '0.75rem',
+                          <td style={{ padding: '0.75rem' }}>
+                            <span style={{
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '20px',
+                              fontSize: '0.75rem',
                                 backgroundColor: invoice.status === 'Paid' ? '#10b981' : '#f59e0b',
-                                color: 'white'
-                              }}>
-                                {invoice.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '0.75rem' }}>
-                              <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer', marginRight: '0.25rem' }}>📄 View</button>
-                              <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer' }}>⬇️ Download</button>
-                            </td>
-                          </tr>
+                              color: 'white'
+                            }}>
+                              {invoice.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.75rem' }}>
+                            <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer', marginRight: '0.25rem' }}>📄 View</button>
+                            <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer' }}>⬇️ Download</button>
+                          </td>
+                        </tr>
                         ))
                       )}
                     </tbody>
