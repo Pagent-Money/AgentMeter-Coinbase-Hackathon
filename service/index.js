@@ -292,6 +292,21 @@ app.post('/api/meter/event', async (req, res) => {
 
     const event = await dbHelpers.createMeteringEvent(eventData)
 
+    // Increment user's meter usage by the event's total cost
+    const meter = await dbHelpers.incrementUserMeterUsage(project_id, user_id || 'anonymous', event.total_cost)
+
+    // Check if the user has exceeded their threshold
+    if (meter && meter.current_usage >= meter.threshold_amount) {
+      return res.status(402).json({
+        success: false,
+        error: 'Threshold exceeded. Payment required.',
+        meter: {
+          current_usage: meter.current_usage,
+          threshold_amount: meter.threshold_amount
+        }
+      })
+    }
+
     res.json({
       success: true,
       event: {
@@ -538,6 +553,62 @@ app.post('/chat', async (req, res) => {
       error: 'Failed to process chat request',
       details: error.message
     })
+  }
+})
+
+// Get meter usage for a user (no payment)
+app.get('/api/meter/usage', async (req, res) => {
+  try {
+    const project_id = req.query.project_id || req.headers['x-project-id']
+    const user_id = req.query.user_id || req.headers['x-user-id']
+    if (!project_id || !user_id) {
+      return res.status(400).json({ error: 'project_id and user_id are required' })
+    }
+    const meter = await dbHelpers.getUserMeter(project_id, user_id)
+    if (!meter) {
+      return res.status(404).json({ error: 'Meter record not found' })
+    }
+    res.json({
+      success: true,
+      meter: {
+        current_usage: meter.current_usage,
+        threshold_amount: meter.threshold_amount,
+        last_reset_at: meter.last_reset_at
+      }
+    })
+  } catch (error) {
+    console.error('Error getting meter usage:', error)
+    res.status(500).json({ error: 'Failed to get meter usage' })
+  }
+})
+
+// Get meter usage and reset after payment
+app.post('/api/meter/usage_with_pay', async (req, res) => {
+  try {
+    const project_id = req.body.project_id || req.headers['x-project-id']
+    const user_id = req.body.user_id || req.headers['x-user-id']
+    if (!project_id || !user_id) {
+      return res.status(400).json({ error: 'project_id and user_id are required' })
+    }
+    const meter = await dbHelpers.getUserMeter(project_id, user_id)
+    if (!meter) {
+      return res.status(404).json({ error: 'Meter record not found' })
+    }
+    // Here you can add payment verification logic if needed
+    // Reset the meter after payment
+    await dbHelpers.resetUserMeter(project_id, user_id)
+    res.json({
+      success: true,
+      meter: {
+        current_usage: meter.current_usage,
+        threshold_amount: meter.threshold_amount,
+        last_reset_at: meter.last_reset_at
+      },
+      message: 'Meter reset after payment.'
+    })
+  } catch (error) {
+    console.error('Error in meter usage pay:', error)
+    res.status(500).json({ error: 'Failed to process meter usage payment' })
   }
 })
 
