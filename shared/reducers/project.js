@@ -5,6 +5,7 @@ const initialState = {
   projects: [],
   currentProject: null,
   meterEvents: [],
+  billingRecords: [],
   loading: false,
   error: null
 }
@@ -188,6 +189,31 @@ export default handleActions({
   },
   
   [actions.loadMeterEventsFailure] (state, action) {
+    return {
+      ...state,
+      loading: false,
+      error: action.payload
+    }
+  },
+
+  [actions.loadBillingRecords] (state, action) {
+    return {
+      ...state,
+      loading: true,
+      error: null
+    }
+  },
+  
+  [actions.loadBillingRecordsSuccess] (state, action) {
+    return {
+      ...state,
+      loading: false,
+      billingRecords: action.payload,
+      error: null
+    }
+  },
+  
+  [actions.loadBillingRecordsFailure] (state, action) {
     return {
       ...state,
       loading: false,

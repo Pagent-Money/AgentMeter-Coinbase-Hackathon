@@ -208,6 +208,32 @@ app.get('/api/projects', async (req, res) => {
   }
 })
 
+app.get('/api/billing/records', async (req, res) => {
+  try {
+    const { project_id } = req.query;
+    if (!project_id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    const records = await dbHelpers.getBillingRecords(project_id);
+    res.json({
+      success: true,
+      records: records.map(record => ({
+        id: record.id,
+        period_start: record.period_start,
+        period_end: record.period_end,
+        usage: record.usage,
+        amount: record.amount,
+        status: record.status,
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error loading billing records:', error);
+    res.status(500).json({ error: 'Failed to load billing records' });
+  }
+});
+
 app.put('/api/project/:id', async (req, res) => {
   try {
     const { id } = req.params
