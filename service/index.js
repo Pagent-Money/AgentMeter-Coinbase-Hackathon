@@ -399,6 +399,89 @@ app.get('/api/meter/events', async (req, res) => {
   }
 })
 
+// Meter stats API
+app.get('/api/meter/stats', async (req, res) => {
+  try {
+    const { project_id, timeframe = '30 days' } = req.query
+
+    if (!project_id) {
+      return res.status(400).json({ error: 'Project ID is required' })
+    }
+
+    // Get all events for the project
+    const allEvents = await dbHelpers.getMeteringEvents(project_id, {})
+    
+    // Calculate stats
+    const totalEvents = allEvents.length
+    const totalCost = allEvents.reduce((sum, event) => sum + (event.total_cost || 0), 0)
+    const totalRequests = allEvents.reduce((sum, event) => sum + (event.request_count || 0), 0)
+    const totalInputTokens = allEvents.reduce((sum, event) => sum + (event.input_tokens || 0), 0)
+    const totalOutputTokens = allEvents.reduce((sum, event) => sum + (event.output_tokens || 0), 0)
+    
+    // Group by agent
+    const agentStats = {}
+    allEvents.forEach(event => {
+      const agentId = event.agent_id
+      if (!agentStats[agentId]) {
+        agentStats[agentId] = {
+          agent_id: agentId,
+          events: 0,
+          total_cost: 0,
+          total_requests: 0,
+          total_input_tokens: 0,
+          total_output_tokens: 0
+        }
+      }
+      agentStats[agentId].events += 1
+      agentStats[agentId].total_cost += event.total_cost || 0
+      agentStats[agentId].total_requests += event.request_count || 0
+      agentStats[agentId].total_input_tokens += event.input_tokens || 0
+      agentStats[agentId].total_output_tokens += event.output_tokens || 0
+    })
+
+    // Group by event type
+    const eventTypeStats = {}
+    allEvents.forEach(event => {
+      const eventType = event.event_type
+      if (!eventTypeStats[eventType]) {
+        eventTypeStats[eventType] = {
+          event_type: eventType,
+          events: 0,
+          total_cost: 0
+        }
+      }
+      eventTypeStats[eventType].events += 1
+      eventTypeStats[eventType].total_cost += event.total_cost || 0
+    })
+
+    res.json({
+      success: true,
+      stats: {
+        timeframe,
+        summary: {
+          total_events: totalEvents,
+          total_cost: Math.round(totalCost * 10000) / 10000, // Round to 4 decimal places
+          total_requests: totalRequests,
+          total_input_tokens: totalInputTokens,
+          total_output_tokens: totalOutputTokens,
+          average_cost_per_request: totalRequests > 0 ? Math.round((totalCost / totalRequests) * 10000) / 10000 : 0
+        },
+        by_agent: Object.values(agentStats).map(agent => ({
+          ...agent,
+          total_cost: Math.round(agent.total_cost * 10000) / 10000
+        })),
+        by_event_type: Object.values(eventTypeStats).map(type => ({
+          ...type,
+          total_cost: Math.round(type.total_cost * 10000) / 10000
+        }))
+      }
+    })
+  } catch (error) {
+    console.error('Error loading meter stats:', error)
+    res.status(500).json({ error: 'Failed to load meter stats' })
+  }
+})
+
 app.get('/health', async (req, res) => {
   let supabaseStatus = 'disconnected'
   

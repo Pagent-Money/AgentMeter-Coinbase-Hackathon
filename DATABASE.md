@@ -212,7 +212,7 @@ curl 'https://YOUR_SUPABASE_URL/rest/v1/metering_events?project_id=eq.YOUR_PROJE
 
 #### Get Metering Stats (RPC)
 ```bash
-curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/rpc/get_metering_stats' \
+curl -X POST 'https://URL/rest/v1/rpc/get_metering_stats' \
   -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
   -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
