@@ -208,6 +208,32 @@ app.get('/api/projects', async (req, res) => {
   }
 })
 
+app.get('/api/billing/records', async (req, res) => {
+  try {
+    const { project_id } = req.query;
+    if (!project_id) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    const records = await dbHelpers.getBillingRecords(project_id);
+    res.json({
+      success: true,
+      records: records.map(record => ({
+        id: record.id,
+        period_start: record.period_start,
+        period_end: record.period_end,
+        usage: record.usage,
+        amount: record.amount,
+        status: record.status,
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error loading billing records:', error);
+    res.status(500).json({ error: 'Failed to load billing records' });
+  }
+});
+
 app.put('/api/project/:id', async (req, res) => {
   try {
     const { id } = req.params
@@ -292,6 +318,21 @@ app.post('/api/meter/event', async (req, res) => {
 
     const event = await dbHelpers.createMeteringEvent(eventData)
 
+    // Increment user's meter usage by the event's total cost
+    const meter = await dbHelpers.incrementUserMeterUsage(project_id, user_id || 'anonymous', event.total_cost)
+
+    // Check if the user has exceeded their threshold
+    if (meter && meter.current_usage >= meter.threshold_amount) {
+      return res.status(402).json({
+        success: false,
+        error: 'Threshold exceeded. Payment required.',
+        meter: {
+          current_usage: meter.current_usage,
+          threshold_amount: meter.threshold_amount
+        }
+      })
+    }
+
     res.json({
       success: true,
       event: {
@@ -355,6 +396,89 @@ app.get('/api/meter/events', async (req, res) => {
   } catch (error) {
     console.error('Error loading meter events:', error)
     res.status(500).json({ error: 'Failed to load meter events' })
+  }
+})
+
+// Meter stats API
+app.get('/api/meter/stats', async (req, res) => {
+  try {
+    const { project_id, timeframe = '30 days' } = req.query
+
+    if (!project_id) {
+      return res.status(400).json({ error: 'Project ID is required' })
+    }
+
+    // Get all events for the project
+    const allEvents = await dbHelpers.getMeteringEvents(project_id, {})
+    
+    // Calculate stats
+    const totalEvents = allEvents.length
+    const totalCost = allEvents.reduce((sum, event) => sum + (event.total_cost || 0), 0)
+    const totalRequests = allEvents.reduce((sum, event) => sum + (event.request_count || 0), 0)
+    const totalInputTokens = allEvents.reduce((sum, event) => sum + (event.input_tokens || 0), 0)
+    const totalOutputTokens = allEvents.reduce((sum, event) => sum + (event.output_tokens || 0), 0)
+    
+    // Group by agent
+    const agentStats = {}
+    allEvents.forEach(event => {
+      const agentId = event.agent_id
+      if (!agentStats[agentId]) {
+        agentStats[agentId] = {
+          agent_id: agentId,
+          events: 0,
+          total_cost: 0,
+          total_requests: 0,
+          total_input_tokens: 0,
+          total_output_tokens: 0
+        }
+      }
+      agentStats[agentId].events += 1
+      agentStats[agentId].total_cost += event.total_cost || 0
+      agentStats[agentId].total_requests += event.request_count || 0
+      agentStats[agentId].total_input_tokens += event.input_tokens || 0
+      agentStats[agentId].total_output_tokens += event.output_tokens || 0
+    })
+
+    // Group by event type
+    const eventTypeStats = {}
+    allEvents.forEach(event => {
+      const eventType = event.event_type
+      if (!eventTypeStats[eventType]) {
+        eventTypeStats[eventType] = {
+          event_type: eventType,
+          events: 0,
+          total_cost: 0
+        }
+      }
+      eventTypeStats[eventType].events += 1
+      eventTypeStats[eventType].total_cost += event.total_cost || 0
+    })
+
+    res.json({
+      success: true,
+      stats: {
+        timeframe,
+        summary: {
+          total_events: totalEvents,
+          total_cost: Math.round(totalCost * 10000) / 10000, // Round to 4 decimal places
+          total_requests: totalRequests,
+          total_input_tokens: totalInputTokens,
+          total_output_tokens: totalOutputTokens,
+          average_cost_per_request: totalRequests > 0 ? Math.round((totalCost / totalRequests) * 10000) / 10000 : 0
+        },
+        by_agent: Object.values(agentStats).map(agent => ({
+          ...agent,
+          total_cost: Math.round(agent.total_cost * 10000) / 10000
+        })),
+        by_event_type: Object.values(eventTypeStats).map(type => ({
+          ...type,
+          total_cost: Math.round(type.total_cost * 10000) / 10000
+        }))
+      }
+    })
+  } catch (error) {
+    console.error('Error loading meter stats:', error)
+    res.status(500).json({ error: 'Failed to load meter stats' })
   }
 })
 
@@ -538,6 +662,62 @@ app.post('/chat', async (req, res) => {
       error: 'Failed to process chat request',
       details: error.message
     })
+  }
+})
+
+// Get meter usage for a user (no payment)
+app.get('/api/meter/usage', async (req, res) => {
+  try {
+    const project_id = req.query.project_id || req.headers['x-project-id']
+    const user_id = req.query.user_id || req.headers['x-user-id']
+    if (!project_id || !user_id) {
+      return res.status(400).json({ error: 'project_id and user_id are required' })
+    }
+    const meter = await dbHelpers.getUserMeter(project_id, user_id)
+    if (!meter) {
+      return res.status(404).json({ error: 'Meter record not found' })
+    }
+    res.json({
+      success: true,
+      meter: {
+        current_usage: meter.current_usage,
+        threshold_amount: meter.threshold_amount,
+        last_reset_at: meter.last_reset_at
+      }
+    })
+  } catch (error) {
+    console.error('Error getting meter usage:', error)
+    res.status(500).json({ error: 'Failed to get meter usage' })
+  }
+})
+
+// Get meter usage and reset after payment
+app.post('/api/meter/usage_with_pay', async (req, res) => {
+  try {
+    const project_id = req.body.project_id || req.headers['x-project-id']
+    const user_id = req.body.user_id || req.headers['x-user-id']
+    if (!project_id || !user_id) {
+      return res.status(400).json({ error: 'project_id and user_id are required' })
+    }
+    const meter = await dbHelpers.getUserMeter(project_id, user_id)
+    if (!meter) {
+      return res.status(404).json({ error: 'Meter record not found' })
+    }
+    // Here you can add payment verification logic if needed
+    // Reset the meter after payment
+    await dbHelpers.resetUserMeter(project_id, user_id)
+    res.json({
+      success: true,
+      meter: {
+        current_usage: meter.current_usage,
+        threshold_amount: meter.threshold_amount,
+        last_reset_at: meter.last_reset_at
+      },
+      message: 'Meter reset after payment.'
+    })
+  } catch (error) {
+    console.error('Error in meter usage pay:', error)
+    res.status(500).json({ error: 'Failed to process meter usage payment' })
   }
 })
 

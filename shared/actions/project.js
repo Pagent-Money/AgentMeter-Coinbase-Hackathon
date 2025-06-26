@@ -29,3 +29,7 @@ export const recordMeterEventFailure = createAction('meter/RECORD_EVENT_FAILURE'
 export const loadMeterEvents = createAction('meter/LOAD_EVENTS')
 export const loadMeterEventsSuccess = createAction('meter/LOAD_EVENTS_SUCCESS')
 export const loadMeterEventsFailure = createAction('meter/LOAD_EVENTS_FAILURE')
+
+export const loadBillingRecords = createAction('billing/LOAD_RECORDS')
+export const loadBillingRecordsSuccess = createAction('billing/LOAD_RECORDS_SUCCESS')
+export const loadBillingRecordsFailure = createAction('billing/LOAD_RECORDS_FAILURE')

@@ -7,6 +7,7 @@ This project uses Supabase as its backend database. The main tables managed are:
 - `projects`
 - `metering_events`
 - `billing_records`
+- `meter`
 
 Additionally, there is a stored procedure (RPC) called `get_metering_stats`.
 
@@ -78,6 +79,29 @@ Stores billing information for each project.
 - `createBillingRecord(billingData)`
 - `getBillingRecords(projectId)`
 - `updateBillingRecord(recordId, updateData)`
+
+---
+
+### 4. `meter`
+
+**Purpose:**  
+Tracks per-user metering thresholds and usage for each project. Used to enforce usage limits and reset usage after payment.
+
+**Likely Fields:**
+- `id` (primary key)
+- `project_id` (foreign key to `projects`)
+- `user_id`
+- `threshold_amount` (number, the allowed usage before payment is required)
+- `current_usage` (number, the user's current usage)
+- `last_reset_at` (timestamp, when the usage was last reset)
+- `updated_at` (timestamp, last update)
+- (other meter-specific fields)
+
+**Helper Functions:**
+- `getUserMeter(projectId, userId)`
+- `setUserMeter(projectId, userId, amount)`
+- `incrementUserMeterUsage(projectId, userId, amount)`
+- `resetUserMeter(projectId, userId)`
 
 ---
 
@@ -188,7 +212,7 @@ curl 'https://YOUR_SUPABASE_URL/rest/v1/metering_events?project_id=eq.YOUR_PROJE
 
 #### Get Metering Stats (RPC)
 ```bash
-curl -X POST 'https://YOUR_SUPABASE_URL/rest/v1/rpc/get_metering_stats' \
+curl -X POST 'https://URL/rest/v1/rpc/get_metering_stats' \
   -H "apikey: YOUR_SUPABASE_SERVICE_ROLE_KEY" \
   -H "Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \

@@ -11,7 +11,7 @@ import * as projectActions from 'actions/project'
 import classNames from 'classnames'
 import styles from './style.css'
 
-const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, error }) => {
+const Dashboard = ({ actions, projects, currentProject, meterEvents, billingRecords, loading, error }) => {
   const [activeTab, setActiveTab] = useState('projects')
   const [selectedProject, setSelectedProject] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -46,6 +46,13 @@ const Dashboard = ({ actions, projects, currentProject, meterEvents, loading, er
       actions.loadMeterEvents(params)
     }
   }, [selectedProject, actions])
+
+  // Load billing records when billing tab is active and project changes
+  useEffect(() => {
+    if (activeTab === 'billing' && selectedProject) {
+      actions.loadBillingRecords({ project_id: selectedProject })
+    }
+  }, [activeTab, selectedProject, actions])
 
   // Calculate filtered events based on time filter
   const getFilteredEvents = useCallback(() => {
@@ -460,7 +467,7 @@ meter = AgentMeter(
                                    <div key={agent} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0', borderBottom: index < 4 ? '1px solid #f3f4f6' : 'none' }}>
                                      <div>
                                        <span style={{ fontWeight: '500', color: '#374151' }}>{agent}</span>
-                                       <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{stats.calls} calls</p>
+                                       <p style={{ fontSize: '0.75rem', color: '#6b7280', margin: '0.25rem 0 0 0' }}>{!isNaN(stats.calls) && stats.calls != null ? stats.calls : 0} calls</p>
                                      </div>
                                      <span style={{ color: '#10b981', fontWeight: '500' }}>${stats.revenue != null ? stats.revenue.toFixed(3) : '0.000'}</span>
                                    </div>
@@ -694,22 +701,27 @@ meter = AgentMeter(
                       </tr>
                     </thead>
                     <tbody>
-                      {[
-                        { id: 'INV-2024-002', period: 'Feb 1-28, 2024', usage: '45.2K tokens, 1.2K requests', amount: '$45.67', status: 'Paid' },
-                        { id: 'INV-2024-001', period: 'Jan 1-31, 2024', usage: '38.1K tokens, 980 requests', amount: '$38.42', status: 'Paid' },
-                        { id: 'INV-2023-012', period: 'Dec 1-31, 2023', usage: '52.3K tokens, 1.4K requests', amount: '$52.89', status: 'Paid' }
-                      ].map((invoice, index) => (
+                      {loading && (!billingRecords || billingRecords.length === 0) ? (
+                        <tr>
+                          <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Loading invoices...</td>
+                        </tr>
+                      ) : !billingRecords || billingRecords.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>No invoices found for this project.</td>
+                        </tr>
+                      ) : (
+                        billingRecords.map((invoice, index) => (
                         <tr key={invoice.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                           <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.875rem', fontWeight: '500' }}>{invoice.id}</td>
-                          <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>{invoice.period}</td>
+                            <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>{invoice.period_start} - {invoice.period_end}</td>
                           <td style={{ padding: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>{invoice.usage}</td>
-                          <td style={{ padding: '0.75rem', fontWeight: '500' }}>{invoice.amount}</td>
+                            <td style={{ padding: '0.75rem', fontWeight: '500' }}>${invoice.amount != null ? Number(invoice.amount).toFixed(2) : '0.00'}</td>
                           <td style={{ padding: '0.75rem' }}>
                             <span style={{
                               padding: '0.25rem 0.75rem',
                               borderRadius: '20px',
                               fontSize: '0.75rem',
-                              backgroundColor: '#10b981',
+                                backgroundColor: invoice.status === 'Paid' ? '#10b981' : '#f59e0b',
                               color: 'white'
                             }}>
                               {invoice.status}
@@ -720,7 +732,8 @@ meter = AgentMeter(
                             <button style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer' }}>⬇️ Download</button>
                           </td>
                         </tr>
-                      ))}
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -895,6 +908,7 @@ export default withRouter(
       projects: state.project.projects || [],
       currentProject: state.project.currentProject,
       meterEvents: state.project.meterEvents || [],
+      billingRecords: state.project.billingRecords || [],
       loading: state.project.loading,
       error: state.project.error
     }),

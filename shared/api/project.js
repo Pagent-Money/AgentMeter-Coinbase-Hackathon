@@ -22,3 +22,6 @@ export const recordMeterEvent = ({ project_id, agent_id, user_id, tokens_in, tok
 
 export const loadMeterEvents = ({ project_id }, options) =>
   meterApi('GET', '/meter/events', { project_id }, options)
+
+export const loadBillingRecords = ({ project_id }, options) =>
+  meterApi('GET', '/billing/records', { project_id }, options)

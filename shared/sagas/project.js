@@ -116,6 +116,20 @@ function* loadMeterEvents(action) {
   }
 }
 
+function* loadBillingRecords(action) {
+  try {
+    const response = yield call(api.loadBillingRecords, action.payload)
+    if (response.success) {
+      yield put(actions.loadBillingRecordsSuccess(response.records))
+    } else {
+      yield put(actions.loadBillingRecordsFailure(response.error || 'Failed to load billing records'))
+    }
+  } catch (error) {
+    console.error('Error loading billing records:', error)
+    yield put(actions.loadBillingRecordsFailure(error.message || 'Failed to load billing records'))
+  }
+}
+
 export default function* projectSaga() {
   // Project watchers
   yield takeEvery(String(actions.createProject), createProject)
@@ -127,4 +141,7 @@ export default function* projectSaga() {
   // Meter events watchers
   yield takeEvery(String(actions.recordMeterEvent), recordMeterEvent)
   yield takeEvery(String(actions.loadMeterEvents), loadMeterEvents)
+
+  // Billing records watchers
+  yield takeEvery(String(actions.loadBillingRecords), loadBillingRecords)
 }
