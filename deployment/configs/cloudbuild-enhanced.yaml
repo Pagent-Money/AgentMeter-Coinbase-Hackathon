@@ -57,7 +57,7 @@ steps:
       - '--timeout'
       - '300s'
       - '--set-env-vars'
-      - 'NODE_ENV=production,PORT=8080,ENVIRONMENT=${_ENVIRONMENT}'
+      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT}'
       - '--set-secrets'
       - 'SUPABASE_URL=supabase-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-key:latest'
       - '--labels'
@@ -113,7 +113,7 @@ steps:
       - '--timeout'
       - '60s'
       - '--set-env-vars'
-      - 'NODE_ENV=production,PORT=8080,ENVIRONMENT=${_ENVIRONMENT}'
+      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT}'
       - '--labels'
       - 'environment=${_ENVIRONMENT},component=frontend,commit=${_COMMIT_SHA}'
 
