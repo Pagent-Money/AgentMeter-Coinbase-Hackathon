@@ -15,10 +15,10 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built service
+# Copy built service (this should exist after Cloud Build step)
 COPY static/service.js .
 
 # Build metadata

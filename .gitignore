@@ -332,7 +332,13 @@ Dockerfile.prod
 docker-compose.override.yml
 .dockerignore
 
-# Deployment artifacts
-deployment/
+# Deployment artifacts (but keep our deployment configs)
+# deployment/
 terraform/
 k8s/
+
+# Exclude deployment secrets and temporary files but keep configs
+deployment/secrets/
+deployment/tmp/
+deployment/**/*.log
+deployment/**/cloudbuild-simple.yaml

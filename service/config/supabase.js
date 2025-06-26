@@ -30,12 +30,104 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 // Database helper functions
 export const dbHelpers = {
-  // Projects
+  // Commercial Accounts
+  async createCommercialAccount(accountData) {
+    const { data, error } = await supabase
+      .from('commercial_accounts')
+      .insert([accountData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getCommercialAccount(accountId) {
+    const { data, error } = await supabase
+      .from('commercial_accounts')
+      .select('*')
+      .eq('id', accountId)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async getCommercialAccountByEmail(email) {
+    const { data, error } = await supabase
+      .from('commercial_accounts')
+      .select('*')
+      .eq('email', email)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  },
+
+  async updateCommercialAccount(accountId, updateData) {
+    const { data, error } = await supabase
+      .from('commercial_accounts')
+      .update({ ...updateData, updated_at: new Date().toISOString() })
+      .eq('id', accountId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // API Key Pairs
+  async generateApiKeyPair(accountId, projectId, name, permissions) {
+    const { data, error } = await supabase
+      .rpc('generate_api_key_pair', {
+        p_account_id: accountId,
+        p_project_id: projectId,
+        p_name: name,
+        p_permissions: permissions
+      })
+    
+    if (error) throw error
+    return data[0] // Returns {api_key, secret_key, key_id}
+  },
+
+  async getApiKeyPairs(accountId, projectId = null) {
+    let query = supabase
+      .from('api_key_pairs')
+      .select('id, name, api_key, status, permissions, last_used_at, expires_at, created_at')
+      .eq('account_id', accountId)
+      .order('created_at', { ascending: false })
+
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data
+  },
+
+  async revokeApiKey(keyId, accountId) {
+    const { data, error } = await supabase
+      .from('api_key_pairs')
+      .update({ status: 'revoked', updated_at: new Date().toISOString() })
+      .eq('id', keyId)
+      .eq('account_id', accountId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Projects (updated for commercial accounts)
   async createProject(projectData) {
     const { data, error } = await supabase
       .from('projects')
       .insert([projectData])
-      .select()
+      .select(`
+        *,
+        commercial_accounts!inner(id, email, full_name, company_name)
+      `)
       .single()
     
     if (error) throw error
@@ -45,7 +137,10 @@ export const dbHelpers = {
   async getProject(projectId) {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(`
+        *,
+        commercial_accounts!inner(id, email, full_name, company_name)
+      `)
       .eq('id', projectId)
       .single()
     
@@ -56,7 +151,24 @@ export const dbHelpers = {
   async getAllProjects() {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select(`
+        *,
+        commercial_accounts!inner(id, email, full_name, company_name)
+      `)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async getProjectsByAccount(accountId) {
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        commercial_accounts!inner(id, email, full_name, company_name)
+      `)
+      .eq('account_id', accountId)
       .order('created_at', { ascending: false })
     
     if (error) throw error
@@ -176,28 +288,27 @@ export const dbHelpers = {
     return data
   },
 
-  // Meter (was Thresholds)
+  // User Meters (updated table name)
   async getUserMeter(projectId, userId) {
     const { data, error } = await supabase
-      .from('meter')
-      .select('*')
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .single();
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116: No rows found
-    return data;
+      .rpc('get_or_create_user_meter', {
+        p_project_id: projectId,
+        p_user_id: userId
+      })
+    
+    if (error) throw error
+    return data[0] // Returns the meter record
   },
 
   async setUserMeter(projectId, userId, amount) {
-    // Upsert meter amount for user in project
     const { data, error } = await supabase
-      .from('meter')
+      .from('user_meters')
       .upsert({
         project_id: projectId,
         user_id: userId,
         threshold_amount: amount,
         updated_at: new Date().toISOString(),
-      }, { onConflict: ['project_id', 'user_id'] })
+      }, { onConflict: 'project_id,user_id' })
       .select()
       .single();
     if (error) throw error;
@@ -205,20 +316,26 @@ export const dbHelpers = {
   },
 
   async incrementUserMeterUsage(projectId, userId, amount) {
-    // Increment current_usage and return updated row (meter)
-    const { data, error } = await supabase.rpc('increment_user_usage', {
-      p_project_id: projectId,
-      p_user_id: userId,
-      p_amount: amount
-    });
-    if (error) throw error;
-    return data;
+    // Increment current_usage and return updated row
+    const { data, error } = await supabase
+      .from('user_meters')
+      .update({
+        current_usage: supabase.sql`current_usage + ${amount}`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
   },
 
   async resetUserMeter(projectId, userId) {
     // Reset current_usage to 0 and update last_reset_at
     const { data, error } = await supabase
-      .from('meter')
+      .from('user_meters')
       .update({
         current_usage: 0,
         last_reset_at: new Date().toISOString(),
@@ -227,9 +344,10 @@ export const dbHelpers = {
       .eq('project_id', projectId)
       .eq('user_id', userId)
       .select()
-      .single();
-    if (error) throw error;
-    return data;
+      .single()
+    
+    if (error) throw error
+    return data
   }
 }
 
