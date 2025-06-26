@@ -1,10 +1,10 @@
 {
-  "ENV": "development",
-  "SERVER_URL": "http://localhost:8080",
-  "HOST_URL": "http://localhost:4002",
-  "API_URL": "http://localhost:4021",
-  "SOCKET_URL": "ws://localhost:8080",
-  "DATABASE_HOST": "localhost:27017",
-  "REDIS_HOST": "localhost:6379",
+  "ENV": "production",
+  "SERVER_URL": "https://agentmeter-frontend-hxfxqbv2ia-uc.a.run.app",
+  "HOST_URL": "https://agentmeter-frontend-hxfxqbv2ia-uc.a.run.app",
+  "API_URL": "https://api.staging.agentmeter.money",
+  "SOCKET_URL": "wss://api.staging.agentmeter.money",
+  "DATABASE_HOST": "",
+  "REDIS_HOST": "",
   "OPENAI_API_URL": "https://api.openai.com"
 }
