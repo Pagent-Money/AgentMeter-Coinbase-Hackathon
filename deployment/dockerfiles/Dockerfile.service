@@ -30,7 +30,6 @@ ENV COMMIT_SHA=${COMMIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 ENV ENVIRONMENT=${ENVIRONMENT}
 ENV NODE_ENV=production
-ENV PORT=8080
 
 # Set ownership
 RUN chown -R nextjs:nodejs /app
@@ -41,7 +40,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); const options = { host: 'localhost', port: 8080, path: '/health', timeout: 5000 }; const request = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); request.on('error', () => process.exit(1)); request.on('timeout', () => process.exit(1)); request.end();"
+  CMD node -e "const http = require('http'); const port = process.env.PORT || 8080; const options = { host: 'localhost', port: port, path: '/health', timeout: 5000 }; const request = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); request.on('error', () => process.exit(1)); request.on('timeout', () => process.exit(1)); request.end();"
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
