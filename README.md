@@ -1,6 +1,32 @@
-![AgentMeter Cover](static/images/cover.png)
+![AgentMeter Cover](shared/resources/images/cover.png)
 
 [Pitch Deck (DocSend)](https://docsend.com/view/zbw5h6fqwzsicwcs)
+
+# AgentMeter.Money
+
+Agent-native micropayments on Coinbase CDP Wallet & x402.
+
+## Quickstart
+
+```bash
+pip install agentmeter
+```
+
+## Example: Decorator SDK Usage
+
+```python
+from agentmeter import meter_api_request_pay, meter_instant_pay
+
+@meter_api_request_pay(unit_price=0.05)
+def search_products(query, user_id):
+    """Product search = $0.05 per search"""
+    return perform_ai_search(query)
+
+@meter_instant_pay(amount=9.99, condition_func=is_premium_feature)
+def get_ai_recommendations(user_id, premium=False):
+    """Premium AI recommendations = 9.99 instant charge"""
+    return generate_premium_recommendations(user_id)
+```
 
 # 🏆 AgentMeter - Coinbase Agent in Action Hackathon 2025
 

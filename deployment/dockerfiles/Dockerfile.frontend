@@ -1,5 +1,5 @@
 # Multi-stage build for AgentMeter Frontend
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install security updates and essential packages
 RUN apk update && apk upgrade && \
@@ -16,10 +16,11 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S agentmeter -u 1001
 
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN yarn install --production --frozen-lockfile && \
+    yarn cache clean
 
 # Copy built frontend files
 COPY static/ ./static/

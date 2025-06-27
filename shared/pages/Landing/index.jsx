@@ -104,48 +104,6 @@ const Landing = () => {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className={styles.features}>
-          <div className={styles.container}>
-            <div className={styles.sectionHeader}>
-              <h2>What is AgentMeter?</h2>
-              <p>The first agent-native financial infrastructure combining Coinbase CDP wallets with X402 micropayments to power the AI economy.</p>
-            </div>
-            <div className={styles.featuresGrid}>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>🏦</div>
-                <h3>Project-Level Wallets</h3>
-                <p>Each project gets its own CDP smart account where all agent revenue automatically flows together.</p>
-              </div>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>💰</div>
-                <h3>Automatic Micropayments</h3>
-                <p>X402 protocol enables instant stablecoin payments for every API call, token, or agent interaction.</p>
-              </div>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>⚡</div>
-                <h3>Gasless Transactions</h3>
-                <p>ERC-4337 powered smart accounts eliminate gas fees for seamless agent operations.</p>
-              </div>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>🔒</div>
-                <h3>Policy Governance</h3>
-                <p>Set spending limits and control project financial behavior with programmable policies.</p>
-              </div>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>🔄</div>
-                <h3>Revenue Aggregation</h3>
-                <p>All agent earnings flow into your unified project wallet for simplified management.</p>
-              </div>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>📊</div>
-                <h3>Real-time Analytics</h3>
-                <p>Complete visibility into project performance, agent activity, and revenue generation.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Coinbase Integration Section */}
         <section className={styles.integration}>
           <div className={styles.container}>
@@ -227,20 +185,7 @@ const Landing = () => {
                 </div>
               </div>
 
-              <div className={styles.integrationCta}>
-                <div className={styles.ctaContent}>
-                  <h3>Ready to deploy project-native financial infrastructure?</h3>
-                  <p>Join the revolution that's enabling seamless revenue collection for AI agent projects.</p>
-                  <div className={styles.ctaButtons}>
-                    <Link to="/register" className={styles.primaryButton}>
-                      Create Project Wallet
-                    </Link>
-                    <Link to="/docs" className={styles.secondaryButton}>
-                      CDP Integration Guide
-                    </Link>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </section>
@@ -252,22 +197,21 @@ const Landing = () => {
               <div className={styles.codeLeft}>
                 <h2>Start project financial infrastructure in 3 lines of code</h2>
                 <p>Our CDP-enhanced SDKs provide everything needed for project-native financial operations.</p>
+                <div className={styles.installCommand}>
+                  <code>pip install agentmeter</code>
+                </div>
                 <div className={styles.codeFeatures}>
                   <div className={styles.codeFeature}>
                     <span className={styles.checkIcon}>✓</span>
-                    Automatic project wallet creation
+                    Metering
                   </div>
                   <div className={styles.codeFeature}>
                     <span className={styles.checkIcon}>✓</span>
-                    X402 micropayment integration
+                    Pricing
                   </div>
                   <div className={styles.codeFeature}>
                     <span className={styles.checkIcon}>✓</span>
-                    Gasless transactions
-                  </div>
-                  <div className={styles.codeFeature}>
-                    <span className={styles.checkIcon}>✓</span>
-                    Unified revenue collection
+                    Billing
                   </div>
                 </div>
                 <Link to="/docs" className={styles.primaryButton}>

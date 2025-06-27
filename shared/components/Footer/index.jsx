@@ -55,11 +55,6 @@ const Footer = () => {
             <p className={styles.copyright}>
               © 2025 AgentMeter. All rights reserved.
             </p>
-            <div className={styles.bottomLinks}>
-              <span className={styles.bottomLink}>Privacy</span>
-              <span className={styles.bottomLink}>Terms</span>
-              <span className={styles.bottomLink}>Security</span>
-            </div>
           </div>
         </div>
       </div>
