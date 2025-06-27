@@ -1,5 +1,5 @@
 # Multi-stage build for AgentMeter Frontend
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install security updates and essential packages
 RUN apk update && apk upgrade && \
@@ -7,21 +7,22 @@ RUN apk update && apk upgrade && \
     dumb-init \
     nginx \
     gettext \
-    wget \
+    curl \
     && rm -rf /var/cache/apk/*
 
 # Create app directory and user
 WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S agentmeter -u 1001
 
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN yarn install --production --frozen-lockfile && \
+    yarn cache clean
 
-# Copy built frontend
+# Copy built frontend files
 COPY static/ ./static/
 
 # Copy nginx configuration template
@@ -36,13 +37,14 @@ ENV COMMIT_SHA=${COMMIT_SHA}
 ENV BUILD_TIME=${BUILD_TIME}
 ENV ENVIRONMENT=${ENVIRONMENT}
 ENV NODE_ENV=production
+ENV PORT=8080
 
 # Set up nginx directories and permissions
 RUN mkdir -p /app/nginx /app/logs /app/cache /app/tmp/client_body /app/tmp/proxy /app/tmp/fastcgi /app/tmp/uwsgi /app/tmp/scgi && \
-    chown -R nextjs:nodejs /app && \
+    chown -R agentmeter:nodejs /app && \
     chmod -R 755 /app
 
-USER nextjs
+USER agentmeter
 
 # Expose port
 EXPOSE 8080
@@ -51,12 +53,15 @@ EXPOSE 8080
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'export PORT=${PORT:-8080}' >> /app/start.sh && \
     echo 'envsubst "\$PORT" < /app/nginx.conf.template > /app/nginx.conf' >> /app/start.sh && \
+    echo 'echo "🚀 Starting AgentMeter Frontend on port $PORT"' >> /app/start.sh && \
+    echo 'echo "📂 Serving files from /app/static"' >> /app/start.sh && \
+    echo 'echo "🔗 Hackathon demo available at /coinbase-hackathon"' >> /app/start.sh && \
     echo 'exec nginx -c /app/nginx.conf -g "daemon off;"' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8080}/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:${PORT}/ || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

@@ -32,7 +32,7 @@ const baseConfig = {
     alias: {
       'react/jsx-runtime.js': 'react/jsx-runtime',
       'react/jsx-dev-runtime.js': 'react/jsx-dev-runtime',
-      'constants/_env': resolve(__dirname, 'shared/constants/_env')
+      'constants/_env': resolve(__dirname, 'shared/constants/env')
     }
   },
   stats: {
