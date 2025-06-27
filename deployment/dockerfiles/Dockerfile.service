@@ -5,12 +5,13 @@ FROM node:18-alpine AS base
 RUN apk update && apk upgrade && \
     apk add --no-cache \
     dumb-init \
+    curl \
     && rm -rf /var/cache/apk/*
 
 # Create app directory and user
 WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S agentmeter -u 1001
 
 # Copy package files
 COPY package*.json ./
@@ -18,8 +19,9 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built service (this should exist after Cloud Build step)
-COPY static/service.js .
+# Copy built service files
+COPY static/service.js ./service.js
+COPY service/ ./service/
 
 # Build metadata
 ARG COMMIT_SHA=unknown
@@ -32,15 +34,15 @@ ENV ENVIRONMENT=${ENVIRONMENT}
 ENV NODE_ENV=production
 
 # Set ownership
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+RUN chown -R agentmeter:nodejs /app
+USER agentmeter
 
-# Expose port
+# Expose port (Cloud Run will set PORT env var automatically)
 EXPOSE 8080
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); const port = process.env.PORT || 8080; const options = { host: 'localhost', port: port, path: '/health', timeout: 5000 }; const request = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); request.on('error', () => process.exit(1)); request.on('timeout', () => process.exit(1)); request.end();"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]

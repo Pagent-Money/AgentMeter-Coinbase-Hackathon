@@ -1,3 +1,7 @@
+![AgentMeter Cover](static/images/cover.png)
+
+[Pitch Deck (DocSend)](https://docsend.com/view/zbw5h6fqwzsicwcs)
+
 # 🏆 AgentMeter - Coinbase Agent in Action Hackathon 2025
 
 > **Agent-Native Financial Infrastructure for AI Applications**  

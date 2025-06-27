@@ -1,17 +1,29 @@
-# Enhanced Google Cloud Build configuration for AgentMeter
-# This file defines the build and deployment pipeline with commercial account features
+# Enhanced Google Cloud Build configuration for AgentMeter Coinbase Hackathon
+# This file defines the build and deployment pipeline for the hackathon demo
 
 steps:
-  # Install dependencies and build the service
+  # Step 1: Install dependencies
   - name: 'node:18'
     entrypoint: 'npm'
     args: ['install']
     
+  # Step 2: Build the service backend
   - name: 'node:18'
     entrypoint: 'npm'
     args: ['run', 'build:service']
+    env:
+      - 'NODE_ENV=production'
+      - 'APP_ENV=production'
 
-  # Build and push service container to Artifact Registry
+  # Step 3: Build the frontend
+  - name: 'node:18'
+    entrypoint: 'npm'
+    args: ['run', 'build:client']
+    env:
+      - 'NODE_ENV=production'
+      - 'APP_ENV=production'
+
+  # Step 4: Build and push service container to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -32,7 +44,7 @@ steps:
       - 'push'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/agentmeter-repo/agentmeter-service:${_ENVIRONMENT}-${BUILD_ID}'
 
-  # Deploy service to Cloud Run
+  # Step 5: Deploy service to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -49,25 +61,25 @@ steps:
       - '--port'
       - '8080'
       - '--memory'
-      - '512Mi'
+      - '1Gi'
       - '--cpu'
-      - '1'
+      - '2'
       - '--max-instances'
-      - '10'
+      - '3'
+      - '--min-instances'
+      - '1'
       - '--timeout'
       - '300s'
+      - '--concurrency'
+      - '80'
       - '--set-env-vars'
-      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT}'
+      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT},FRONTEND_URL=https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app,CORS_ORIGINS=https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app'
       - '--set-secrets'
-      - 'SUPABASE_URL=supabase-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-key:latest,OPENAI_API_KEY=openai-api-key:latest'
+      - 'SUPABASE_URL=supabase-url:latest,SUPABASE_ANON_KEY=supabase-anon-key:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-key:latest,OPENAI_API_KEY=openai-api-key:latest,DEEPSEEK_API_KEY=deepseek-api-key:latest,JWT_SECRET=jwt-secret:latest'
       - '--labels'
-      - 'environment=${_ENVIRONMENT},component=service,commit=${_COMMIT_SHA}'
+      - 'environment=${_ENVIRONMENT},component=service,commit=${_COMMIT_SHA},project=agentmeter-hackathon'
 
-  # Build and push frontend container to Artifact Registry
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['run', 'build']
-
+  # Step 6: Build and push frontend container to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -88,7 +100,7 @@ steps:
       - 'push'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/agentmeter-repo/agentmeter-frontend:${_ENVIRONMENT}-${BUILD_ID}'
 
-  # Deploy frontend to Cloud Run
+  # Step 7: Deploy frontend to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
@@ -109,19 +121,45 @@ steps:
       - '--cpu'
       - '1'
       - '--max-instances'
-      - '5'
+      - '2'
+      - '--min-instances'
+      - '0'
       - '--timeout'
       - '60s'
+      - '--concurrency'
+      - '100'
       - '--set-env-vars'
-      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT}'
+      - 'NODE_ENV=production,ENVIRONMENT=${_ENVIRONMENT},BACKEND_URL=https://agentmeter-service-${_SERVICE_SUFFIX}.run.app'
       - '--labels'
-      - 'environment=${_ENVIRONMENT},component=frontend,commit=${_COMMIT_SHA}'
+      - 'environment=${_ENVIRONMENT},component=frontend,commit=${_COMMIT_SHA},project=agentmeter-hackathon'
+
+  # Step 8: Output service URLs
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🚀 Deployment completed successfully!"
+        echo ""
+        echo "🔗 Service URLs:"
+        echo "Frontend: https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app"
+        echo "Backend:  https://agentmeter-service-${_SERVICE_SUFFIX}.run.app"
+        echo ""
+        echo "📝 Demo URLs:"
+        echo "Hackathon Demo: https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app/coinbase-hackathon"
+        echo "Dashboard:      https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app/dashboard"
+        echo ""
+        echo "🔧 Health Checks:"
+        curl -f https://agentmeter-service-${_SERVICE_SUFFIX}.run.app/health || echo "❌ Service health check failed"
+        curl -f https://agentmeter-frontend-${_SERVICE_SUFFIX}.run.app/ || echo "❌ Frontend health check failed"
 
 # Build options
 options:
   machineType: 'E2_HIGHCPU_8'
   substitution_option: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
+  env:
+    - 'DOCKER_BUILDKIT=1'
 
 # Default substitutions (can be overridden)
 substitutions:
@@ -129,6 +167,7 @@ substitutions:
   _ENVIRONMENT: 'production'
   _COMMIT_SHA: 'unknown'
   _BUILD_TIME: 'unknown'
+  _SERVICE_SUFFIX: '${BUILD_ID}'
 
 # Images to be pushed to Artifact Registry
 images:
@@ -136,13 +175,13 @@ images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/agentmeter-repo/agentmeter-frontend:${_ENVIRONMENT}-${BUILD_ID}'
 
 # Build timeout
-timeout: '1200s'
+timeout: '1800s'
 
 # Artifacts to store
 artifacts:
   objects:
     location: 'gs://$PROJECT_ID-build-artifacts'
     paths:
-      - 'static/service.js'
-      - 'static/app.js'
-      - 'package.json' 
+      - 'static/*'
+      - 'package.json'
+      - 'deployment/logs/*' 

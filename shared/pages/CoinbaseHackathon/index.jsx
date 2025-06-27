@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import styles from './style.css'
+import coverImg from '../../resources/images/cover.png'
 
 const CoinbaseHackathon = () => {
   // Demo 1: Pay-walled Article State
@@ -388,6 +389,9 @@ const CoinbaseHackathon = () => {
   return (
     <div className={styles.hackathonPage}>
       <div className={styles.container}>
+        <div style={{ width: '100%', marginBottom: 32 }}>
+          <img src={coverImg} alt="AgentMeter Cover" style={{ width: '100%', maxHeight: 320, objectFit: 'cover', borderRadius: 12 }} />
+        </div>
         {/* Header */}
         <div className={styles.header}>
           <h1 className={styles.title}>🏆 Coinbase Hackathon - AgentMeter Live Demos</h1>
