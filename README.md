@@ -2,6 +2,10 @@
 
 [Pitch Deck (DocSend)](https://docsend.com/view/zbw5h6fqwzsicwcs)
 
+## Demo Video
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/JtPHvKgHN88?si=ITMn-dndxu2NvfHv" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 # AgentMeter.Money
 
 Agent-native micropayments on Coinbase CDP Wallet & x402.
