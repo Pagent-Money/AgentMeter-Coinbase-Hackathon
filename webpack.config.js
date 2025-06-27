@@ -59,7 +59,10 @@ const baseConfig = {
             options: {
               babelrc: false,
               presets: [
-                ['@babel/env', { loose: false, modules: false }],
+                ['@babel/env', { 
+                  loose: false, 
+                  modules: process.env.TARGET === 'browser' ? false : 'commonjs'
+                }],
                 '@babel/react'
               ],
               plugins: removeEmpty([

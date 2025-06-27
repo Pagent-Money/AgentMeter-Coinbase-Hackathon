@@ -22,7 +22,9 @@ RUN yarn install --production --frozen-lockfile && \
 
 # Copy built service files
 COPY static/service.js ./service.js
-COPY service/ ./service/
+COPY service/billing/ ./service/billing/
+COPY service/config/ ./service/config/
+COPY service/middleware/ ./service/middleware/
 
 # Build metadata
 ARG COMMIT_SHA=unknown
