@@ -15,7 +15,7 @@ Authorization: Bearer YOUR_PROJECT_SECRET_KEY
 ## Base URL
 
 ```
-https://api.agentmeter.com/v1
+https://api.agentmeter.money
 ```
 
 ## API Endpoints
@@ -120,7 +120,7 @@ DELETE /projects/:projectId
 
 #### Create a Metering Event
 ```http
-POST /metering-events
+POST /api/meter/event
 ```
 
 **Request Body:**
@@ -132,9 +132,7 @@ POST /metering-events
   "event_type": "api_call",
   "api_calls": 1,
   "tokens_in": 100,
-  "tokens_out": 50,
-  "request_cost": 0.001,
-  "token_cost": 0.002
+  "tokens_out": 50
 }
 ```
 
@@ -158,7 +156,7 @@ POST /metering-events
 
 #### List Metering Events
 ```http
-GET /metering-events
+GET /api/meter/events
 ```
 
 **Query Parameters:**
@@ -192,7 +190,7 @@ GET /metering-events
 
 #### Get Metering Statistics
 ```http
-GET /metering-stats
+GET /api/meter/stats
 ```
 
 **Query Parameters:**
@@ -298,7 +296,7 @@ PATCH /billing-records/:recordId
 
 #### Get User Meter
 ```http
-GET /meter
+GET /api/meter/usage
 ```
 
 **Query Parameters:**
@@ -319,7 +317,7 @@ GET /meter
 
 #### Set User Meter
 ```http
-PUT /meter
+PUT /api/meter
 ```
 
 **Request Body:**
@@ -345,7 +343,7 @@ PUT /meter
 
 #### Increment User Meter Usage
 ```http
-POST /meter/increment
+POST /api/meter/increment
 ```
 
 **Request Body:**
@@ -371,7 +369,7 @@ POST /meter/increment
 
 #### Reset User Meter
 ```http
-POST /meter/reset
+POST /api/meter/reset
 ```
 
 **Request Body:**

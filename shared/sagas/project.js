@@ -37,7 +37,9 @@ function* loadProject(action) {
 
 function* loadProjects(action) {
   try {
-    const response = yield call(api.loadProjects)
+    // Support userEmail filtering
+    const userEmail = action && action.payload && action.payload.userEmail
+    const response = yield call(api.loadProjects, userEmail ? { userEmail } : undefined)
     console.log('loadProjects response', response)
 
     if (response.success) {

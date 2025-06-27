@@ -101,7 +101,7 @@ deploy() {
     # Submit build to Cloud Build
     log_info "Submitting build to Cloud Build..."
     gcloud builds submit \
-        --config=cloudbuild.yaml \
+        --config=deployment/configs/cloudbuild.yaml \
         --substitutions=_REGION=$REGION \
         --project=$PROJECT_ID
     
