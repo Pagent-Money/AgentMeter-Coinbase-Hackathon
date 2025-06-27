@@ -1032,6 +1032,20 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@coinbase/cdp-sdk@^1.1.1":
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/@coinbase/cdp-sdk/-/cdp-sdk-1.19.0.tgz#20f6dc45e6e937b3ead83b50456781ab177997ed"
+  integrity sha512-WEWhtwP9WY523NkQ9DV5zWmb0Qh5YF99MA2+KAa8Ufai/v6vCIvKL3AFNQVj5O26EVNsOeiGj1XuOv8pslXPWQ==
+  dependencies:
+    "@solana/spl-token" "^0.4.13"
+    "@solana/web3.js" "^1.98.1"
+    abitype "1.0.6"
+    axios "^1.8.2"
+    jose "^6.0.8"
+    md5 "^2.3.0"
+    viem "^2.21.26"
+    zod "^3.24.4"
+
 "@coinbase/cdp-sdk@^1.15.0":
   version "1.16.0"
   resolved "https://registry.npmjs.org/@coinbase/cdp-sdk/-/cdp-sdk-1.16.0.tgz"
@@ -1045,6 +1059,16 @@
     md5 "^2.3.0"
     viem "^2.21.26"
     zod "^3.24.4"
+
+"@coinbase/x402@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@coinbase/x402/-/x402-0.4.1.tgz#7ef484211952ffe13ee75e3acb6227767f3b12cc"
+  integrity sha512-K/5qzGH63IrDk3ZMf603U9BC5St8jopONJWLkKK2wLMjIlXh+PTdC8+SWp3mL194txtUG3qajgmNFrDS0I1/bA==
+  dependencies:
+    "@coinbase/cdp-sdk" "^1.1.1"
+    viem "^2.21.26"
+    x402 "^0.4.1"
+    zod "^3.24.2"
 
 "@csstools/convert-colors@^1.4.0":
   version "1.4.0"
@@ -8790,10 +8814,24 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.npmjs.org/vary/-/vary-1.1.2.tgz"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-viem@^2.21.26, viem@^2.23.1, viem@^2.31.3:
+viem@^2.21.26, viem@^2.23.1:
   version "2.31.3"
   resolved "https://registry.npmjs.org/viem/-/viem-2.31.3.tgz"
   integrity sha512-q3JGI5QFB4LEiLfg9f2ZwjUygAn2W0wMLtj++7E/L2i8Y7zKAkR4TEEOhwBn7gyYXpuc7f1vfd26PJbkEKuj5w==
+  dependencies:
+    "@noble/curves" "1.9.2"
+    "@noble/hashes" "1.8.0"
+    "@scure/bip32" "1.7.0"
+    "@scure/bip39" "1.6.0"
+    abitype "1.0.8"
+    isows "1.0.7"
+    ox "0.8.1"
+    ws "8.18.2"
+
+viem@^2.31.4:
+  version "2.31.4"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.31.4.tgz#a8cce5579cc495a2586a16dd4062deecc0f53f1d"
+  integrity sha512-0UZ/asvzl6p44CIBRDbwEcn3HXIQQurBZcMo5qmLhQ8s27Ockk+RYohgTLlpLvkYs8/t4UUEREAbHLuek1kXcw==
   dependencies:
     "@noble/curves" "1.9.2"
     "@noble/hashes" "1.8.0"
@@ -9146,6 +9184,14 @@ x402@^0.4.0:
   integrity sha512-CbJEpBpPim0SYFQjN9GmTMivizdBlrYbhiybZ2zfMPy5y5qilkajUCL4BYJr9sArPki8kIOCHb95WvX6yfmYpA==
   dependencies:
     viem "^2.23.1"
+    zod "^3.24.2"
+
+x402@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/x402/-/x402-0.4.1.tgz#7da67b5d7e83e6b44e449e9b7e1793e836ac8b3c"
+  integrity sha512-5EW6FzcZjyizk4qa+t7QzclUBq//mCWbNf75O+WgDIyGtWg2FfqWPocmncjof6cG33rrHQG/PvNw5AMvKU6lpw==
+  dependencies:
+    viem "^2.21.26"
     zod "^3.24.2"
 
 xtend@^4.0.0, xtend@^4.0.2:

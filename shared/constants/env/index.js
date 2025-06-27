@@ -1,4 +1,4 @@
-import config from './production'
+import config from './development'
 
 export const ENV = config.ENV
 export const SERVER_URL = config.SERVER_URL

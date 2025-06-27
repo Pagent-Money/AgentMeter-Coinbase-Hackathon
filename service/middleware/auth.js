@@ -88,10 +88,51 @@ async function validateApiKey(apiKey) {
   }
 }
 
+// Session token validation for frontend authentication
+async function validateSessionToken(sessionToken) {
+  try {
+    // Extract account ID from session token
+    // Format: session_{accountId}_{timestamp}
+    const parts = sessionToken.split('_')
+    if (parts.length !== 3 || parts[0] !== 'session') {
+      return { valid: false, error: 'Invalid session token format' }
+    }
+
+    const accountId = parts[1]
+    const timestamp = parseInt(parts[2])
+    
+    // Check if token is not too old (24 hours = 86400000 ms)
+    const now = Date.now()
+    const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+    if (now - timestamp > maxAge) {
+      return { valid: false, error: 'Session token expired' }
+    }
+
+    // Get account from database
+    const account = await dbHelpers.getCommercialAccount(accountId)
+    if (!account) {
+      return { valid: false, error: 'Account not found' }
+    }
+
+    if (account.status !== 'active') {
+      return { valid: false, error: 'Account is not active' }
+    }
+
+    return {
+      valid: true,
+      account: account,
+      authMethod: 'session'
+    }
+  } catch (error) {
+    console.error('Session token validation error:', error)
+    return { valid: false, error: 'Session validation failed' }
+  }
+}
+
 // Enhanced authentication middleware supporting both methods
 function authenticateProject(req, res, next) {
   // Skip authentication for non-metering endpoints and public endpoints
-  if (!req.path.startsWith('/api/meter') && !req.path.startsWith('/projects')) {
+  if (!req.path.startsWith('/api/meter') && !req.path.startsWith('/api/projects')) {
     return next()
   }
 
@@ -119,8 +160,27 @@ function authenticateProject(req, res, next) {
 
   // Determine authentication method based on key format
   const isApiKey = key.startsWith('pk_') || key.startsWith('sk_')
+  const isSessionToken = key.startsWith('session_')
   
-  if (isApiKey) {
+  if (isSessionToken) {
+    // Session token authentication for frontend
+    validateSessionToken(key)
+      .then(({ valid, account, error }) => {
+        if (!valid) {
+          return res.status(401).json({ error })
+        }
+
+        // Add authentication info to request
+        req.account = account
+        req.permissions = { read: true, write: true, admin: true } // Full access for account owner
+        req.authMethod = 'session'
+        next()
+      })
+      .catch(error => {
+        console.error('Session authentication error:', error)
+        res.status(500).json({ error: 'Authentication service error' })
+      })
+  } else if (isApiKey) {
     // New API key authentication
     validateApiKey(key)
       .then(({ valid, project, account, permissions, error, authMethod }) => {
@@ -203,8 +263,23 @@ function optionalAuthenticateProject(req, res, next) {
   }
 
   const isApiKey = key.startsWith('pk_') || key.startsWith('sk_')
+  const isSessionToken = key.startsWith('session_')
   
-  if (isApiKey) {
+  if (isSessionToken) {
+    validateSessionToken(key)
+      .then(({ valid, account }) => {
+        if (valid) {
+          req.account = account
+          req.permissions = { read: true, write: true, admin: true }
+          req.authMethod = 'session'
+        }
+        next()
+      })
+      .catch(error => {
+        console.error('Optional session authentication error:', error)
+        next()
+      })
+  } else if (isApiKey) {
     validateApiKey(key)
       .then(({ valid, project, account, permissions, authMethod }) => {
         if (valid) {

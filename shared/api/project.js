@@ -1,14 +1,44 @@
 import { meterApi } from 'api'
 
+// Helper function to get user authentication headers
+const getAuthHeaders = () => {
+  const sessionToken = localStorage.getItem('sessionToken')
+  
+  if (sessionToken) {
+    return {
+      'Authorization': `Bearer ${sessionToken}`
+    }
+  }
+  return {}
+}
+
 // Project management APIs
-export const createProject = ({ name, description, settings }, options) =>
-  meterApi('POST', '/project/create', { name, description, settings }, options)
+export const createProject = ({ name, description, settings }, options) => {
+  const authHeaders = getAuthHeaders()
+  const customOptions = {
+    ...options,
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {})
+    }
+  }
+  return meterApi('POST', '/projects', { name, description, settings }, customOptions)
+}
 
 export const loadProject = ({ id }, options) =>
   meterApi('GET', '/project/load', { id }, options)
 
-export const loadProjects = (options) =>
-  meterApi('GET', '/projects', {}, options)
+export const loadProjects = (options) => {
+  const authHeaders = getAuthHeaders()
+  const customOptions = {
+    ...options,
+    headers: {
+      ...authHeaders,
+      ...(options?.headers || {})
+    }
+  }
+  return meterApi('GET', '/projects', {}, customOptions)
+}
 
 export const updateProject = ({ id, name, description, status, settings }, options) =>
   meterApi('PUT', `/project/${id}`, { name, description, status, settings }, options)
